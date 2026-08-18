@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+.env.local
+
+# tsc -b writes this next to the config.
+*.tsbuildinfo

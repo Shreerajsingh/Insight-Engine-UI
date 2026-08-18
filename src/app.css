@@ -1,0 +1,1304 @@
+/* Layout and components. Every colour here is a token from theme.css. */
+
+.app {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
+/* ---- sidebar ---- */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.sidebar__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.sidebar__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.group + .group {
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+}
+
+.group__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 6px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.group__toggle {
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+}
+
+.group__toggle:hover {
+  color: var(--text-secondary);
+}
+
+.group__count {
+  margin-left: auto;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.group__chevron {
+  display: inline-block;
+  width: 8px;
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.group__chevron--open {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group__chevron {
+    transition: none;
+  }
+}
+
+.sidebar__filter {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar__filter .field__input {
+  padding: 6px 9px;
+  font-size: 12.5px;
+}
+
+.meeting {
+  padding: 9px 12px 10px;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+
+.meeting:hover {
+  background: var(--surface-2);
+}
+
+.meeting--selected,
+.meeting--selected:hover {
+  background: var(--accent-wash);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.meeting__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The picking target: the whole title block, not a link inside it. */
+.meeting__pick {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  text-align: left;
+  border: none;
+  background: none;
+}
+
+.meeting__pick:disabled {
+  cursor: default;
+}
+
+.meeting__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.meeting__action {
+  flex: none;
+  align-self: center;
+}
+
+.group__hint {
+  margin: 0 12px 8px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.meeting__meter {
+  margin-bottom: 2px;
+}
+
+.meeting__error {
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.meeting__title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 550;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting__meta {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.meeting__step {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+/* A meter, not a chart: one ratio against a limit, on the same ramp. */
+.meter {
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--grid);
+  overflow: hidden;
+}
+
+.meter__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+/* Status never rides on colour alone — it always carries its label. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.pill--good .pill__dot { background: var(--good); }
+.pill--running .pill__dot { background: var(--warning); }
+.pill--failed .pill__dot { background: var(--critical); }
+
+/* ---- main ---- */
+
+/*
+ * No top padding, on purpose. A sticky child's offsets are resolved against the scroll container's
+ * PADDING box, so `top: 0` with 28px of padding here would park the header 28px down and let the
+ * board scroll through the gap above it. The space is moved into the sticky header itself.
+ */
+.main {
+  min-width: 0;
+  overflow-y: auto;
+  padding: 0 32px 64px;
+}
+
+@media (max-width: 900px) {
+  .main { padding: 0 16px 48px; }
+}
+
+/*
+ * One row: identity left, views right.
+ *
+ * Left-aligned against the sidebar rather than centred in the viewport — an auto margin on a wide
+ * screen leaves a gap in front of the title that reads as a mistake. The cap only stops charts
+ * stretching absurdly on an ultrawide display.
+ */
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: 1600px;
+}
+
+.head__ident {
+  /* min-width lets the flex child shrink, which is what allows the title to ellipsis. */
+  min-width: 0;
+  padding-bottom: 9px;
+}
+
+.head__title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.head__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.head__facts {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The meeting type as a chip rather than an uppercase line of its own above the title. */
+.head__type {
+  flex: none;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 700px) {
+  .head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+/*
+ * The meeting and its two views stay put while the board scrolls.
+ *
+ * Full-bleed by negative margins that cancel the scroll container's padding, then re-applied as
+ * padding here: `top: 0` on a sticky child sticks to the container's padding edge, which would leave
+ * a strip of scrolling page visible above it. The background is opaque for the same reason — charts
+ * passing behind a translucent header read as a rendering fault.
+ */
+.main__sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* Full-bleed across the scroll container, and it owns the top padding the container gave up. */
+  margin: 0 -32px 18px;
+  padding: 12px 32px 0;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .main__sticky {
+    margin: 0 -16px 14px;
+    padding: 10px 16px 0;
+  }
+}
+
+
+
+
+.board {
+  max-width: 1600px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---- ask box ---- */
+
+.ask {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  box-shadow: var(--shadow);
+}
+
+.ask__row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.ask__input {
+  flex: 1;
+  min-height: 42px;
+  max-height: 140px;
+  padding: 11px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.ask__input::placeholder { color: var(--text-muted); }
+
+.button {
+  padding: 11px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.button:hover:not(:disabled) { background: var(--surface-2); }
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.button--primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+}
+
+.button--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, black);
+}
+
+.button--ghost {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 550;
+  border-radius: 7px;
+  background: none;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.chip {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.chip:hover:not(:disabled) {
+  background: var(--accent-wash);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text-primary);
+}
+
+/* ---- answer ---- */
+
+.answer {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  box-shadow: var(--shadow);
+}
+
+.answer__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px 0;
+}
+
+.answer__question {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.answer__text {
+  margin: 8px 18px 0;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+.answer__body { padding: 16px 18px 18px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: 14px;
+}
+
+/* A table or a wide chart takes the full row rather than being squeezed. */
+.grid > .card--wide { grid-column: 1 / -1; }
+
+/* ---- chart card ---- */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px 14px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+
+.card__title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+}
+
+.card__subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.card__plot {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.card__foot {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- stat tile ---- */
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  padding: 14px 0 10px;
+}
+
+.stat__value {
+  font-size: 48px;
+  font-weight: 620;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.stat__caption {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* ---- table ---- */
+
+.table__scroll {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.table th {
+  text-align: left;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--axis);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--grid);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.table td:first-child { color: var(--text-primary); }
+
+.table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- tooltip ---- */
+
+.tooltip {
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+}
+
+.tooltip__label {
+  font-weight: 620;
+  margin-bottom: 5px;
+  color: var(--text-primary);
+}
+
+.tooltip__row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.tooltip__swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.tooltip__value {
+  margin-left: auto;
+  padding-left: 10px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- legend ---- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 10px;
+}
+
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.legend__swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* ---- notes, evidence, disclosure ---- */
+
+.notes {
+  margin: 14px 0 0;
+  padding: 0 0 0 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.section__label {
+  margin: 18px 0 8px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.quote {
+  margin: 0 0 8px;
+  padding: 9px 12px;
+  border-left: 2px solid var(--axis);
+  background: var(--surface-2);
+  border-radius: 0 6px 6px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.quote__who {
+  display: block;
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.disclosure {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.disclosure summary {
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.disclosure summary:hover { color: var(--text-secondary); }
+
+.sql {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---- states ---- */
+
+.note {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.note--error { border-left: 3px solid var(--critical); }
+
+.empty {
+  max-width: 720px;
+  padding: 84px 24px 56px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.empty__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 620;
+  color: var(--text-primary);
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--axis);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2s; }
+  .meter__fill { transition: none; }
+}
+
+/* ---- add meeting ---- */
+
+.add__open {
+  width: calc(100% - 16px);
+  margin: 8px;
+  text-align: center;
+  border-style: dashed;
+}
+
+.add {
+  margin: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.add__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.add__title {
+  padding: 0;
+}
+
+.field {
+  display: block;
+  margin-bottom: 9px;
+}
+
+.field__label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.field__input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface-raised);
+  font-size: 13px;
+}
+
+.field__input::placeholder { color: var(--text-muted); }
+
+.field--inline {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.add__submit {
+  width: 100%;
+  margin-top: 3px;
+}
+
+.add__note {
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+
+/* ---- saved dashboard ---- */
+
+.dash {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* One column below tablet width: three-across charts are unreadable on a phone, and a span of
+   4 there would be 100px of plot. */
+@media (max-width: 900px) {
+  .dash {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dash__cell {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+.dash__cell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  box-shadow: var(--shadow);
+}
+
+/* Where the dragged card would land. */
+.dash__cell--over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.dash__cell--dragging {
+  opacity: 0.5;
+}
+
+.dash__bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 0 10px;
+}
+
+.dash__handle {
+  flex: none;
+  padding: 0 2px;
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  user-select: none;
+}
+
+.dash__handle:active {
+  cursor: grabbing;
+}
+
+.dash__question {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.dash__spans {
+  display: flex;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.dash__span {
+  padding: 3px 8px;
+  border: none;
+  background: none;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.dash__span + .dash__span {
+  border-left: 1px solid var(--border);
+}
+
+.dash__span:hover {
+  background: var(--surface-2);
+}
+
+.dash__span--on {
+  background: var(--accent-wash);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.dash__remove {
+  flex: none;
+}
+
+/* The card inside a cell brings its own padding; it must not bring a second border. */
+.dash__cell > .card {
+  border: none;
+  background: none;
+  padding-top: 6px;
+}
+
+/* ---- view tabs ---- */
+
+.tabs {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  /* The sticky wrapper draws the rule, so the tabs sit flush against it and their active
+     underline lands on it rather than beside it. */
+  margin-bottom: -1px;
+}
+
+.tab {
+  padding: 6px 12px 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-muted);
+}
+
+.tab:hover {
+  color: var(--text-secondary);
+}
+
+.tab--on {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.tab__count {
+  margin-left: 5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ---- card details, and the expanded view ---- */
+
+.dash__icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: none;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.dash__icon:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.dash__icon--on {
+  background: var(--accent-wash);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text-primary);
+}
+
+.info {
+  margin: 4px 14px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.info__label {
+  margin: 12px 0 4px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.info__label:first-child {
+  margin-top: 0;
+}
+
+.info__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.info__meta {
+  margin: 12px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.info .quote {
+  background: var(--surface-1);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 24px;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+@media (max-width: 700px) {
+  .modal {
+    padding: 12px;
+  }
+}
+
+.modal__panel {
+  width: min(1100px, 100%);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal__question {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.modal__body {
+  padding: 6px 4px 14px;
+}
+
+.modal__body > .card {
+  border: none;
+  background: none;
+}
+
+/* ---- confirm buttons ---- */
+
+.confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.confirm__act {
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.confirm__act:hover:not(:disabled):not(.confirm__act--armed) {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.confirm__act:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/*
+ * The app's own accent, used the way the app already uses it: a wash for the resting state — the
+ * same one that marks the selected meeting — with the hairline border and radius every other
+ * control here has. Solid fill is kept for hover and for the armed state, so a column of these down
+ * the sidebar reads as available actions rather than as a stack of alerts.
+ */
+.confirm__act--accent {
+  background: var(--accent-wash);
+  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--accent);
+}
+
+.confirm__act--accent:hover:not(:disabled):not(.confirm__act--armed) {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+}
+
+.confirm__act--quiet {
+  font-weight: 550;
+}
+
+.confirm__act--danger:hover:not(:disabled):not(.confirm__act--armed) {
+  border-color: color-mix(in srgb, var(--critical) 45%, transparent);
+  color: var(--critical);
+}
+
+/* Armed: filled, so the question is unmistakable — and never colour alone, since the label itself
+   changes to a question. */
+.confirm__act--armed,
+.confirm__act--accent.confirm__act--armed {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-ink);
+}
+
+.confirm__act--danger.confirm__act--armed {
+  background: var(--critical);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+/* An armed button still has to feel pressable, so hover darkens the fill it already has. */
+.confirm__act--armed:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 86%, black);
+}
+
+.confirm__act--danger.confirm__act--armed:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--critical) 86%, black);
+}
+
+.confirm__cancel {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.confirm__cancel:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+/* ---- meeting info ---- */
+
+.meeting__info {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.meeting__info:hover {
+  background: var(--surface-raised);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.modal__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+}
+
+/* The panel is the whole body here, so it drops the inner card treatment. */
+.info--plain {
+  margin: 10px 14px 6px;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.info__text--absent {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.facts dt {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  padding-top: 2px;
+}
+
+.facts dd {
+  margin: 0;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.info__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.info__hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
