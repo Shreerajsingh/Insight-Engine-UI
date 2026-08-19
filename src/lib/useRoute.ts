@@ -2,22 +2,44 @@ import { useCallback, useEffect, useState } from 'react';
 
 export type View = 'dashboard' | 'ask';
 
+/**
+ * What is being looked at: one meeting, or every meeting at once.
+ *
+ * A discriminated union rather than a nullable meeting id, because "global" and "nothing
+ * selected" are different states that would otherwise both be `null` — and the difference
+ * decides which API the board and the ask box talk to.
+ */
+export type Scope = { kind: 'meeting'; meetingId: string } | { kind: 'global' };
+
+export const GLOBAL_SCOPE: Scope = { kind: 'global' };
+
 export interface Route {
-  /** The meeting the URL names, or null at the root. */
-  meetingId: string | null;
+  scope: Scope | null;
   view: View;
 }
 
+/** The meeting a route names, or null when it is global or empty. */
+export function meetingIdOf(scope: Scope | null): string | null {
+  return scope?.kind === 'meeting' ? scope.meetingId : null;
+}
+
+/** A stable key per scope — for the hooks that fetch and cache per board. */
+export function scopeKey(scope: Scope | null): string | null {
+  if (!scope) return null;
+  return scope.kind === 'global' ? 'global' : `meeting:${scope.meetingId}`;
+}
+
 /**
- * The URL is where the selected meeting lives.
+ * The URL is where the selected scope lives.
  *
  * Before this, selection was component state: a reload put you back on the first meeting in the
  * list, and a link to what you were looking at did not exist. The path carries it instead —
- * `/m/<meetingId>` for the board, `/m/<meetingId>/ask` for the question view — so a refresh, the
- * back button and a pasted link all land where they should.
+ * `/m/<meetingId>` for a meeting's board, `/global` for the cross-meeting one, and `/ask`
+ * appended for the question view — so a refresh, the back button and a pasted link all land
+ * where they should.
  *
- * Written against the History API rather than a router: there are two routes, and a routing library
- * would be more code than the thing it routes.
+ * Written against the History API rather than a router: there are four routes, and a routing
+ * library would be more code than the thing it routes.
  *
  * A path rather than a query parameter because that is what the URL is for, with one deployment
  * consequence: any static host serving the built app must rewrite unknown paths to `index.html`, or
@@ -26,10 +48,10 @@ export interface Route {
  */
 export function useRoute(): {
   route: Route;
-  /** Pushes a new URL — the back button returns to the previous meeting. */
-  go: (meetingId: string | null, view?: View) => void;
+  /** Pushes a new URL — the back button returns to the previous scope. */
+  go: (scope: Scope | null, view?: View) => void;
   /** Replaces it — for a selection the user did not make, which should not become history. */
-  replace: (meetingId: string | null, view?: View) => void;
+  replace: (scope: Scope | null, view?: View) => void;
 } {
   const [route, setRoute] = useState<Route>(() => parse(window.location.pathname));
 
@@ -42,12 +64,12 @@ export function useRoute(): {
   }, []);
 
   const navigate = useCallback(
-    (mode: 'push' | 'replace', meetingId: string | null, view: View = 'dashboard') => {
-      const path = build(meetingId, view);
+    (mode: 'push' | 'replace', scope: Scope | null, view: View = 'dashboard') => {
+      const path = build(scope, view);
       if (path === window.location.pathname) return;
 
       window.history[mode === 'push' ? 'pushState' : 'replaceState']({}, '', path);
-      setRoute({ meetingId, view });
+      setRoute({ scope, view });
     },
     [],
   );
@@ -55,35 +77,42 @@ export function useRoute(): {
   return {
     route,
     go: useCallback(
-      (meetingId: string | null, view?: View) => navigate('push', meetingId, view),
+      (scope: Scope | null, view?: View) => navigate('push', scope, view),
       [navigate],
     ),
     replace: useCallback(
-      (meetingId: string | null, view?: View) => navigate('replace', meetingId, view),
+      (scope: Scope | null, view?: View) => navigate('replace', scope, view),
       [navigate],
     ),
   };
 }
 
-/** `/m/<id>` or `/m/<id>/ask`. Anything else is the root. */
+/** `/global[/ask]`, `/m/<id>[/ask]`. Anything else is the root. */
 function parse(pathname: string): Route {
-  const match = /^\/m\/([^/]+)(?:\/(ask|dashboard))?\/?$/.exec(pathname);
-  if (!match) return { meetingId: null, view: 'dashboard' };
+  const global = /^\/global(?:\/(ask|dashboard))?\/?$/.exec(pathname);
+  if (global) return { scope: GLOBAL_SCOPE, view: asView(global[1]) };
+
+  const meeting = /^\/m\/([^/]+)(?:\/(ask|dashboard))?\/?$/.exec(pathname);
+  if (!meeting) return { scope: null, view: 'dashboard' };
 
   return {
     // Ids are percent-encoded on the way out, so they come back decoded.
-    meetingId: safeDecode(match[1]),
-    view: match[2] === 'ask' ? 'ask' : 'dashboard',
+    scope: { kind: 'meeting', meetingId: safeDecode(meeting[1]) },
+    view: asView(meeting[2]),
   };
 }
 
-function build(meetingId: string | null, view: View): string {
-  if (!meetingId) return '/';
+function build(scope: Scope | null, view: View): string {
+  if (!scope) return '/';
 
-  const base = `/m/${encodeURIComponent(meetingId)}`;
+  const base = scope.kind === 'global' ? '/global' : `/m/${encodeURIComponent(scope.meetingId)}`;
   // The board is the default view, so it stays a bare path — a URL should not carry what it means
   // by default.
   return view === 'ask' ? `${base}/ask` : base;
+}
+
+function asView(segment: string | undefined): View {
+  return segment === 'ask' ? 'ask' : 'dashboard';
 }
 
 /** A hand-edited URL can hold a stray `%`, which `decodeURIComponent` throws on. */

@@ -64,6 +64,8 @@ export interface SemanticHit {
   text: string;
   score: number | null;
   documentType: string | null;
+  /** Which meeting the quote came from. Null when the index never stamped it. */
+  meetingId: string | null;
   row: Record<string, unknown> | null;
 }
 
@@ -86,8 +88,11 @@ export interface QueryPlan {
 
 export interface QueryBundle {
   question: string;
-  meetingId: string;
-  jobId: string;
+  /** Null for a global answer, which spans many meetings. */
+  meetingId: string | null;
+  jobId: string | null;
+  /** How many meetings the answer is over — the denominator for every number in it. */
+  meetingCount: number;
   plan: QueryPlan;
   sql: SqlResult[];
   semantic: SemanticResult[];
@@ -100,8 +105,10 @@ export interface QueryResponse {
   /** Why there is no dashboard. The bundle is still a complete answer. */
   dashboardError: string | null;
   bundle: QueryBundle;
-  /** The rows this answer's charts were saved as — already on the meeting's board. */
+  /** The rows this answer's charts were saved as — already on the board. */
   saved: SavedChart[];
+  /** Present on a global answer: how many meetings it ran over. */
+  meetingCount?: number;
 }
 
 /** Columns of twelve a card spans: a third, a half, the full row. */

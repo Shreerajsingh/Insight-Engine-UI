@@ -1,25 +1,28 @@
 import { useEffect, useState } from 'react';
 import { AddMeeting } from './components/AddMeeting';
 import { AnswerCard } from './components/AnswerCard';
-import { AskBox } from './components/AskBox';
+import { AskBox, GLOBAL_STARTERS, MEETING_STARTERS } from './components/AskBox';
 import { DashboardGrid } from './components/DashboardGrid';
 import { MeetingInfo } from './components/MeetingInfo';
 import { MeetingList } from './components/MeetingList';
 import { generateMeeting } from './lib/api';
 import { useAnswers } from './lib/useAnswers';
 import { useDashboard } from './lib/useDashboard';
-import { useRoute, type View } from './lib/useRoute';
+import { GLOBAL_SCOPE, meetingIdOf, scopeKey, useRoute, type View } from './lib/useRoute';
 import { useMeetings } from './lib/useMeetings';
 import { formatMeetingDate, formatMinutes } from './lib/format';
+import type { Answer } from './lib/useAnswers';
 import type { MeetingCard } from './types';
 import './app.css';
 
 export function App() {
   const { meetings, loading, error, refresh } = useMeetings();
   const { route, go, replace } = useRoute();
-  const selectedId = route.meetingId;
+  const scope = route.scope;
+  const isGlobal = scope?.kind === 'global';
+  const selectedId = meetingIdOf(scope);
   const view = route.view;
-  const board = useDashboard(selectedId);
+  const board = useDashboard(scope);
   const { answers, ask, remove } = useAnswers(board.add);
   const [filter, setFilter] = useState('');
   const [generating, setGenerating] = useState<Set<string>>(new Set());
@@ -29,15 +32,15 @@ export function App() {
   const [theme, setTheme] = useTheme();
 
   // Land on something askable rather than on an empty pane — but only when the URL names nothing.
-  // A URL that names a meeting is a decision already made, by a reload or by whoever sent the link,
+  // A URL that names a scope is a decision already made, by a reload or by whoever sent the link,
   // and overriding it is exactly the behaviour this replaced. `replace`, not `go`: a selection the
   // user did not make should not be a step the back button returns to.
   useEffect(() => {
-    if (selectedId) return;
+    if (scope) return;
 
     const first = meetings.find((meeting) => meeting.queryable);
-    if (first) replace(first.meetingId, view);
-  }, [meetings, selectedId, view, replace]);
+    if (first) replace({ kind: 'meeting', meetingId: first.meetingId }, view);
+  }, [meetings, scope, view, replace]);
 
   const needle = filter.trim().toLowerCase();
   const matches = needle
@@ -51,18 +54,21 @@ export function App() {
   const selected = meetings.find((meeting) => meeting.meetingId === selectedId) ?? null;
   /** The URL names a meeting this list does not hold — a stale link, or a deleted meeting. */
   const missing = selectedId !== null && !loading && selected === null;
-  const session = answers.filter((answer) => answer.meetingId === selectedId);
+  const session = answers.filter((answer) => answer.scopeKey === scopeKey(scope));
   const busy = session.some((answer) => answer.state === 'pending');
+  /** Global needs at least one processed meeting to have anything to query. */
+  const queryable = meetings.filter((meeting) => meeting.queryable);
 
-  const onSelect = (meeting: MeetingCard) => go(meeting.meetingId, view);
-  const setView = (next: View) => go(selectedId, next);
+  const onSelect = (meeting: MeetingCard) => go({ kind: 'meeting', meetingId: meeting.meetingId }, view);
+  const setView = (next: View) => go(scope, next);
 
   /** Asking always shows the answer, which lives in the Ask view with its prose and quotes. */
   const onAsk = (question: string) => {
-    if (!selected) return;
+    if (!scope) return;
+    if (scope.kind === 'meeting' && !selected) return;
 
-    go(selected.meetingId, 'ask');
-    void ask(selected.meetingId, question);
+    go(scope, 'ask');
+    void ask(scope, question);
   };
 
   /**
@@ -114,6 +120,24 @@ export function App() {
           </div>
         </div>
 
+        {/* Pinned above the list and outside the filter, because it is not a meeting and
+            filtering the meetings should never hide the way back to the global board. */}
+        <nav className="sidebar__global">
+          <button
+            type="button"
+            className={`globalnav${isGlobal ? ' globalnav--on' : ''}`}
+            aria-current={isGlobal ? 'page' : undefined}
+            onClick={() => go(GLOBAL_SCOPE, view)}
+          >
+            <span className="globalnav__title">Global</span>
+            <span className="globalnav__meta">
+              {queryable.length > 0
+                ? `Ask across ${queryable.length} ${queryable.length === 1 ? 'meeting' : 'meetings'}`
+                : 'No processed meetings yet'}
+            </span>
+          </button>
+        </nav>
+
         {meetings.length > 4 && (
           <div className="sidebar__filter">
             <input
@@ -155,7 +179,34 @@ export function App() {
       </aside>
 
       <main className="main">
-        {missing ? (
+        {isGlobal ? (
+          <Workspace
+            title="All meetings"
+            meta={
+              queryable.length > 0
+                ? `${queryable.length} processed ${queryable.length === 1 ? 'meeting' : 'meetings'}`
+                : 'Nothing processed yet'
+            }
+            view={view}
+            setView={setView}
+            board={board}
+            session={session}
+            busy={busy}
+            onAsk={onAsk}
+            onRemoveAnswer={remove}
+            starters={GLOBAL_STARTERS}
+            askPlaceholder="Ask across every processed meeting…"
+            askLabel="Ask a question across all meetings"
+            /* Asking with nothing processed would cost a round trip to be told so. */
+            blocked={
+              queryable.length === 0 && !loading
+                ? 'No meetings have been processed yet, so there is nothing to ask across. Press Generate on one in the list.'
+                : null
+            }
+            emptyBoard="Nothing saved yet. Every chart a cross-meeting question produces is kept here — drag the handle to rearrange, and pick a width per card."
+            emptyAsk="Nothing asked this session. Each question is planned into SQL across every processed meeting, run on a read-only connection, and turned into charts — which are saved to the Dashboard as they are made."
+          />
+        ) : missing ? (
           <div className="empty">
             <p className="empty__title">That meeting is not here</p>
             <p>
@@ -179,110 +230,38 @@ export function App() {
               A meeting has to be processed first. Press Generate on one in the list and it will
               show its progress there.
             </p>
+            <p>
+              Or{' '}
+              <button type="button" className="chip" onClick={() => go(GLOBAL_SCOPE, 'ask')}>
+                ask across all meetings
+              </button>
+            </p>
           </div>
         ) : (
-          <>
-            {/* Sticky, so the meeting being looked at and the two views stay reachable while a
-                long board scrolls. One row: the identity on the left, the views on the right — a
-                stacked eyebrow, title and meta line cost 110px of every screen to say three things
-                that fit on two lines. */}
-            <div className="main__sticky">
-              <div className="head">
-                <div className="head__ident">
-                  <h2 className="head__title" title={selected.title}>
-                    {selected.title}
-                  </h2>
-                  <p className="head__meta">
-                    {selected.meetingType && (
-                      <span className="head__type">{selected.meetingType}</span>
-                    )}
-                    <span className="head__facts">
-                      {[
-                        selected.startedAt ? formatMeetingDate(selected.startedAt) : null,
-                        formatMinutes(selected.durationSeconds),
-                        selected.status === 'PARTIAL' ? 'processed with gaps' : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </span>
-                  </p>
-                </div>
-
-                <div className="tabs" role="tablist">
-                  <button
-                    type="button"
-                    role="tab"
-                    className={`tab${view === 'dashboard' ? ' tab--on' : ''}`}
-                    aria-selected={view === 'dashboard'}
-                    onClick={() => setView('dashboard')}
-                  >
-                    Dashboard
-                    {board.charts.length > 0 && (
-                      <span className="tab__count">{board.charts.length}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    className={`tab${view === 'ask' ? ' tab--on' : ''}`}
-                    aria-selected={view === 'ask'}
-                    onClick={() => setView('ask')}
-                  >
-                    Ask
-                    {session.length > 0 && <span className="tab__count">{session.length}</span>}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {board.error && <p className="note note--error">{board.error}</p>}
-
-            {view === 'dashboard' ? (
-              <div className="board">
-                {board.loading && <p className="note">Loading the board…</p>}
-
-                {!board.loading && board.charts.length === 0 && (
-                  <p className="note">
-                    Nothing saved yet. Every chart a question produces is kept here — drag the
-                    handle to rearrange, and pick a width per card.{' '}
-                    <button type="button" className="chip" onClick={() => setView('ask')}>
-                      Ask something
-                    </button>
-                  </p>
-                )}
-
-                {board.charts.length > 0 && (
-                  <DashboardGrid
-                    charts={board.charts}
-                    onMove={board.move}
-                    onResize={board.resize}
-                    onRemove={(id) => void board.remove(id)}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="board">
-                <AskBox meeting={selected} busy={busy} onAsk={onAsk} />
-
-                {session.length === 0 && (
-                  <p className="note">
-                    Nothing asked this session. Each question is planned into SQL against this
-                    meeting's extracted data, run on a read-only connection, and turned into
-                    charts — which are saved to the Dashboard as they are made.
-                  </p>
-                )}
-
-                {session.map((answer) => (
-                  <AnswerCard
-                    key={answer.id}
-                    answer={answer}
-                    onAsk={onAsk}
-                    onRemove={() => remove(answer.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          <Workspace
+            title={selected.title}
+            type={selected.meetingType}
+            meta={[
+              selected.startedAt ? formatMeetingDate(selected.startedAt) : null,
+              formatMinutes(selected.durationSeconds),
+              selected.status === 'PARTIAL' ? 'processed with gaps' : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            view={view}
+            setView={setView}
+            board={board}
+            session={session}
+            busy={busy}
+            onAsk={onAsk}
+            onRemoveAnswer={remove}
+            starters={MEETING_STARTERS}
+            askPlaceholder={`Ask about ${selected.title}…`}
+            askLabel="Ask a question about this meeting"
+            blocked={null}
+            emptyBoard="Nothing saved yet. Every chart a question produces is kept here — drag the handle to rearrange, and pick a width per card."
+            emptyAsk="Nothing asked this session. Each question is planned into SQL against this meeting's extracted data, run on a read-only connection, and turned into charts — which are saved to the Dashboard as they are made."
+          />
         )}
       </main>
 
@@ -298,6 +277,147 @@ export function App() {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * The pane: an identity line, the two views, and whichever one is selected.
+ *
+ * Shared by a meeting's workspace and the global one because they are the same thing over a
+ * different scope — the board renders the same charts, the ask view runs the same three
+ * steps. Only the copy and the starters differ, so those are props rather than two
+ * near-identical trees that drift apart.
+ */
+function Workspace({
+  title,
+  type,
+  meta,
+  view,
+  setView,
+  board,
+  session,
+  busy,
+  onAsk,
+  onRemoveAnswer,
+  starters,
+  askPlaceholder,
+  askLabel,
+  blocked,
+  emptyBoard,
+  emptyAsk,
+}: {
+  title: string;
+  type?: string | null;
+  meta: string;
+  view: View;
+  setView: (next: View) => void;
+  board: ReturnType<typeof useDashboard>;
+  session: Answer[];
+  busy: boolean;
+  onAsk: (question: string) => void;
+  onRemoveAnswer: (id: string) => void;
+  starters: string[];
+  askPlaceholder: string;
+  askLabel: string;
+  /** Why this scope cannot be asked yet, if it cannot. Replaces the ask box. */
+  blocked: string | null;
+  emptyBoard: string;
+  emptyAsk: string;
+}) {
+  return (
+    <>
+      {/* Sticky, so what is being looked at and the two views stay reachable while a long
+          board scrolls. One row: the identity on the left, the views on the right. */}
+      <div className="main__sticky">
+        <div className="head">
+          <div className="head__ident">
+            <h2 className="head__title" title={title}>
+              {title}
+            </h2>
+            <p className="head__meta">
+              {type && <span className="head__type">{type}</span>}
+              <span className="head__facts">{meta}</span>
+            </p>
+          </div>
+
+          <div className="tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              className={`tab${view === 'dashboard' ? ' tab--on' : ''}`}
+              aria-selected={view === 'dashboard'}
+              onClick={() => setView('dashboard')}
+            >
+              Dashboard
+              {board.charts.length > 0 && (
+                <span className="tab__count">{board.charts.length}</span>
+              )}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              className={`tab${view === 'ask' ? ' tab--on' : ''}`}
+              aria-selected={view === 'ask'}
+              onClick={() => setView('ask')}
+            >
+              Ask
+              {session.length > 0 && <span className="tab__count">{session.length}</span>}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {board.error && <p className="note note--error">{board.error}</p>}
+
+      {view === 'dashboard' ? (
+        <div className="board">
+          {board.loading && <p className="note">Loading the board…</p>}
+
+          {!board.loading && board.charts.length === 0 && (
+            <p className="note">
+              {emptyBoard}{' '}
+              <button type="button" className="chip" onClick={() => setView('ask')}>
+                Ask something
+              </button>
+            </p>
+          )}
+
+          {board.charts.length > 0 && (
+            <DashboardGrid
+              charts={board.charts}
+              onMove={board.move}
+              onResize={board.resize}
+              onRemove={(id) => void board.remove(id)}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="board">
+          {blocked ? (
+            <p className="note">{blocked}</p>
+          ) : (
+            <AskBox
+              placeholder={askPlaceholder}
+              label={askLabel}
+              starters={starters}
+              busy={busy}
+              onAsk={onAsk}
+            />
+          )}
+
+          {session.length === 0 && !blocked && <p className="note">{emptyAsk}</p>}
+
+          {session.map((answer) => (
+            <AnswerCard
+              key={answer.id}
+              answer={answer}
+              onAsk={onAsk}
+              onRemove={() => onRemoveAnswer(answer.id)}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 

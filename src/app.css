@@ -98,6 +98,53 @@
   }
 }
 
+/* The global entry sits above the filter and the list, and is not one of them: it is the
+   other thing you can look at, not another meeting. */
+.sidebar__global {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.globalnav {
+  display: block;
+  width: 100%;
+  padding: 9px 11px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.globalnav:hover {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+/* Selected the same way a meeting row is, so "which am I looking at" reads identically
+   whether the answer is a meeting or the whole corpus. */
+.globalnav--on,
+.globalnav--on:hover {
+  background: var(--accent-wash);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.globalnav__title {
+  display: block;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.globalnav__meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
 .sidebar__filter {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
@@ -476,6 +523,17 @@
   margin: 0;
   font-size: 13px;
   font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* The denominator, above the prose: a cross-meeting number is only readable next to how
+   many meetings it is over. */
+.answer__scope {
+  margin: 8px 18px 0;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 

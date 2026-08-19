@@ -52,8 +52,18 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
   const charts = dashboard?.charts ?? tablesFromBundle(bundle);
   const prose = dashboard?.answer ?? proseWithoutAnAgent(bundle);
 
+  // The denominator, stated. "14 objections" over 4 meetings and over 400 are different
+  // findings, and a global answer that does not say which is showing half a number.
+  const across = bundle.meetingId === null ? bundle.meetingCount : null;
+
   return (
     <>
+      {across !== null && (
+        <p className="answer__scope">
+          Across {across} {across === 1 ? 'meeting' : 'meetings'}
+        </p>
+      )}
+
       <p className="answer__text">{prose}</p>
 
       <div className="answer__body">
@@ -67,8 +77,8 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
 
         {saved.length > 0 && (
           <p className="card__foot" style={{ marginTop: 10 }}>
-            {saved.length === 1 ? 'This chart is' : `These ${saved.length} charts are`} saved to the
-            meeting's dashboard.
+            {saved.length === 1 ? 'This chart is' : `These ${saved.length} charts are`} saved to
+            the {across !== null ? 'global' : "meeting's"} dashboard.
           </p>
         )}
 

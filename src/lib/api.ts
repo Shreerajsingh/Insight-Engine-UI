@@ -1,3 +1,4 @@
+import type { Scope } from './useRoute';
 import type {
   MeetingCard,
   QueryResponse,
@@ -120,25 +121,46 @@ export const askQuestion = (meetingId: string, question: string) =>
     body: JSON.stringify({ question }),
   });
 
-const dashboardPath = (meetingId: string) =>
-  `/meetings/${encodeURIComponent(meetingId)}/dashboard`;
+/**
+ * The same question, asked of every processed meeting.
+ *
+ * No id in the path and none in the body: the scope is the whole corpus, decided by the
+ * server from what has finished processing. A client passing a meeting list would be the
+ * browser deciding what the corpus is.
+ */
+export const askGlobal = (question: string) =>
+  request<QueryResponse>('/query/global', {
+    method: 'POST',
+    body: JSON.stringify({ question }),
+  });
 
-export const fetchDashboard = (meetingId: string) =>
-  request<SavedChart[]>(dashboardPath(meetingId));
+/**
+ * One board per scope, and one path builder for both.
+ *
+ * The global board lives at its own route rather than at a meeting route called with a
+ * reserved id — the reserved key is the server's storage detail, and a client that had to
+ * know it would be a client coupled to the schema.
+ */
+const dashboardPath = (scope: Scope) =>
+  scope.kind === 'global'
+    ? '/global/dashboard'
+    : `/meetings/${encodeURIComponent(scope.meetingId)}/dashboard`;
+
+export const fetchDashboard = (scope: Scope) => request<SavedChart[]>(dashboardPath(scope));
 
 /** The whole arrangement, because moving one card renumbers its neighbours. */
 export const saveLayout = (
-  meetingId: string,
+  scope: Scope,
   layout: { id: string; position: number; span: Span }[],
 ) =>
-  request<{ updated: number }>(dashboardPath(meetingId), {
+  request<{ updated: number }>(dashboardPath(scope), {
     method: 'PATCH',
     body: JSON.stringify({ layout }),
   });
 
 /** 204, so there is no body to unwrap. */
-export async function removeSavedChart(meetingId: string, id: string): Promise<void> {
-  await call<unknown>(`${dashboardPath(meetingId)}/${encodeURIComponent(id)}`, {
+export async function removeSavedChart(scope: Scope, id: string): Promise<void> {
+  await call<unknown>(`${dashboardPath(scope)}/${encodeURIComponent(id)}`, {
     method: 'DELETE',
   });
 }
