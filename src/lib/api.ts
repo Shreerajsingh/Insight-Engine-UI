@@ -1,5 +1,6 @@
 import type { Scope } from './useRoute';
 import type {
+  GenerateInput,
   MeetingCard,
   QueryResponse,
   SavedChart,
@@ -109,10 +110,10 @@ export const startAnalytics = (input: StartAnalyticsInput) =>
  * the catalogue's business, and a browser passing a storage path back would be the client telling
  * the server where to read from.
  */
-export const generateMeeting = (meetingId: string, reprocess = false) =>
+export const generateMeeting = (meetingId: string, input: GenerateInput) =>
   requestFlat<StartedJob>(`/meetings/${encodeURIComponent(meetingId)}/generate`, {
     method: 'POST',
-    body: JSON.stringify({ reprocess }),
+    body: JSON.stringify(input),
   });
 
 export const askQuestion = (meetingId: string, question: string) =>

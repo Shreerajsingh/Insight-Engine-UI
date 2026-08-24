@@ -12,7 +12,7 @@ import { GLOBAL_SCOPE, meetingIdOf, scopeKey, useRoute, type View } from './lib/
 import { useMeetings } from './lib/useMeetings';
 import { formatMeetingDate, formatMinutes } from './lib/format';
 import type { Answer } from './lib/useAnswers';
-import type { MeetingCard } from './types';
+import type { GenerateInput, MeetingCard } from './types';
 import './app.css';
 
 export function App() {
@@ -58,6 +58,13 @@ export function App() {
   const busy = session.some((answer) => answer.state === 'pending');
   /** Global needs at least one processed meeting to have anything to query. */
   const queryable = meetings.filter((meeting) => meeting.queryable);
+  /**
+   * Every tag already in use, offered in the popup.
+   *
+   * Read off the meeting list rather than from an endpoint of its own: the list is already
+   * loaded and already polls, so a separate fetch would be a second source of the same truth.
+   */
+  const tagSuggestions = [...new Set(meetings.flatMap((meeting) => meeting.tags))].sort();
 
   const onSelect = (meeting: MeetingCard) => go({ kind: 'meeting', meetingId: meeting.meetingId }, view);
   const setView = (next: View) => go(scope, next);
@@ -78,12 +85,12 @@ export function App() {
    * at once marks both buttons instead of the last one pressed. The list is refreshed on the way
    * out either way — a failure means the state on screen is no longer trustworthy.
    */
-  const onGenerate = async (meeting: MeetingCard, reprocess: boolean) => {
+  const onGenerate = async (meeting: MeetingCard, input: GenerateInput) => {
     setGenerating((current) => new Set(current).add(meeting.meetingId));
     setGenerateError(null);
 
     try {
-      await generateMeeting(meeting.meetingId, reprocess);
+      await generateMeeting(meeting.meetingId, input);
     } catch (error) {
       setGenerateError(`${meeting.title}: ${(error as Error).message}`);
     } finally {
@@ -172,7 +179,6 @@ export function App() {
             selectedId={selectedId}
             generating={generating}
             onSelect={onSelect}
-            onGenerate={onGenerate}
             onInfo={(meeting) => setInfoId(meeting.meetingId)}
           />
         </div>
@@ -269,8 +275,9 @@ export function App() {
         <MeetingInfo
           meeting={info}
           busy={generating.has(info.meetingId)}
-          onGenerate={(meeting, reprocess) => {
-            void onGenerate(meeting, reprocess);
+          tagSuggestions={tagSuggestions}
+          onGenerate={(meeting, input) => {
+            void onGenerate(meeting, input);
             setInfoId(null);
           }}
           onClose={() => setInfoId(null)}

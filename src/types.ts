@@ -160,10 +160,20 @@ export interface MeetingCard {
   processingVersion: number | null;
   /** Stated by the API, not derived from `status` — PARTIAL is queryable, FAILED is not. */
   queryable: boolean;
+  /** Labels on the meeting, as the last run set them. Normalised uppercase. */
+  tags: string[];
+  /** What the last run was told to be sure it captured, so a reprocess can offer it back. */
+  focus: string | null;
   error?: { code: string | null; message: string | null };
 }
 
 export type TranscriptSource = 'local' | 'gcs';
+
+export interface GenerateInput {
+  reprocess: boolean;
+  tags: string[];
+  focus: string | null;
+}
 
 export interface StartAnalyticsInput {
   meetingId: string;

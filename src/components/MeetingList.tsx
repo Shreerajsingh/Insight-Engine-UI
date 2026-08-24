@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ConfirmButton } from './ConfirmButton';
 import { formatMeetingDate, formatMinutes } from '../lib/format';
 import { isInFlight } from '../lib/useMeetings';
 import type { JobStatus, MeetingCard } from '../types';
@@ -33,7 +32,6 @@ export function MeetingList({
   selectedId,
   generating,
   onSelect,
-  onGenerate,
   onInfo,
 }: {
   meetings: MeetingCard[];
@@ -41,7 +39,6 @@ export function MeetingList({
   /** Meeting ids with a generate request in flight, so the button can say so. */
   generating: Set<string>;
   onSelect: (meeting: MeetingCard) => void;
-  onGenerate: (meeting: MeetingCard, reprocess: boolean) => void;
   onInfo: (meeting: MeetingCard) => void;
 }) {
   const ready = meetings.filter((meeting) => meeting.queryable);
@@ -107,7 +104,6 @@ export function MeetingList({
                 selected={meeting.meetingId === selectedId}
                 busy={generating.has(meeting.meetingId)}
                 onSelect={onSelect}
-                onGenerate={onGenerate}
                 onInfo={onInfo}
               />
             ))}
@@ -123,14 +119,12 @@ function MeetingRow({
   selected,
   busy,
   onSelect,
-  onGenerate,
   onInfo,
 }: {
   meeting: MeetingCard;
   selected: boolean;
   busy: boolean;
   onSelect: (meeting: MeetingCard) => void;
-  onGenerate: (meeting: MeetingCard, reprocess: boolean) => void;
   onInfo: (meeting: MeetingCard) => void;
 }) {
   const running = isInFlight(meeting);
@@ -170,21 +164,35 @@ function MeetingRow({
         )}
 
         {meeting.inCatalog && !running && (
-          // Confirmed, because a run is minutes of pipeline and a set of AI calls — and on a row
-          // that already has analytics it replaces what is on screen with a new version.
-          <ConfirmButton
-            className="meeting__action"
-            label={label}
-            confirmLabel={label === 'Reprocess' ? 'Run again?' : `${label}?`}
-            busyLabel="Starting…"
-            busy={busy}
-            tone={label === 'Generate' ? 'accent' : 'quiet'}
-            // A meeting that has already run needs the flag: the server dedupes an in-flight
-            // request, but a finished run is only repeated when asked for deliberately.
-            onConfirm={() => onGenerate(meeting, meeting.status !== 'NOT_STARTED')}
-          />
+          // Opens the panel rather than starting the run.
+          //
+          // A run now carries tags and a focus instruction, and the row has nowhere to put them.
+          // Starting from here would mean starting untagged and unfocused every time — the
+          // convenient path quietly being the one that loses information. So there is one way in,
+          // and it is the one with the fields on it.
+          <button
+            type="button"
+            className={`button meeting__action ${label === 'Generate' ? 'button--primary' : 'button--ghost'}`}
+            disabled={busy}
+            onClick={(event) => {
+              event.stopPropagation();
+              onInfo(meeting);
+            }}
+          >
+            {busy ? 'Starting…' : label}
+          </button>
         )}
       </div>
+
+      {meeting.tags.length > 0 && (
+        <div className="meeting__tags">
+          {meeting.tags.map((tag) => (
+            <span className="tag tag--read" key={tag}>
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
 
       {running && (
         <>

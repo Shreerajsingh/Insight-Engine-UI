@@ -244,6 +244,98 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Tags read as data on the row, not as controls: no hover, no pointer. */
+.meeting__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-2);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.tag--read {
+  font-size: 10px;
+}
+
+.tag__x {
+  border: 0;
+  background: none;
+  padding: 0 0 0 1px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.tag__x:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.taginput__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.taginput__suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.taginput__suggestlabel {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.chip--tiny {
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
+/* A hint that sits above a field rather than beside a button needs to be a block. */
+.info__hint--block {
+  display: block;
+  margin: 0 0 7px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.info__focus {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.info__count {
+  margin: 3px 0 0;
+  text-align: right;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
 .meeting__step {
   margin-top: 6px;
   font-size: 11.5px;
