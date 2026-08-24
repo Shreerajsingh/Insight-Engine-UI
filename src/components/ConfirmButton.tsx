@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Icon } from './Icon';
 
 /**
  * A button that asks before it acts.
@@ -83,7 +84,7 @@ export function ConfirmButton({
           title="Cancel"
           onClick={() => setArmed(false)}
         >
-          ✕
+          <Icon name="close" size={16} />
         </button>
       )}
     </span>

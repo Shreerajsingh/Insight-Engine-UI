@@ -11,11 +11,26 @@ import type { SavedChart } from '../types';
  * which result was a sample or which assumption was made. The Ask view shows all of that as an
  * answer; this is the same material attached to the one chart that survived onto the board.
  */
-export function ChartDetails({ saved }: { saved: SavedChart }) {
+export function ChartDetails({
+  saved,
+  showQuestion = true,
+}: {
+  saved: SavedChart;
+  /**
+   * False where the surrounding chrome already carries the question — the expanded view puts it in
+   * the dialog's header, and repeating it as the first field below is how the header ends up
+   * looking like a caption for the copy underneath it.
+   */
+  showQuestion?: boolean;
+}) {
   return (
     <div className="info">
-      <p className="info__label">Question</p>
-      <p className="info__text">{saved.question}</p>
+      {showQuestion && (
+        <>
+          <p className="info__label">Question</p>
+          <p className="info__text">{saved.question}</p>
+        </>
+      )}
 
       {saved.answer && (
         <>
@@ -68,13 +83,23 @@ export function ChartExpanded({ saved, onClose }: { saved: SavedChart; onClose: 
       label={saved.chart.title}
       onClose={onClose}
       head={
-        <span className="modal__question" title={saved.question}>
-          {saved.question}
-        </span>
+        /*
+         * The question is this dialog's title, so it is set like one.
+         *
+         * It was 13px muted on a single truncated line — the quietest text in a view whose entire
+         * subject it is, and long questions lost their ending to an ellipsis exactly where the
+         * qualifier that narrowed them lived. A chart is only readable next to what was asked, so
+         * it takes the heading's size and the primary colour, and it wraps rather than truncating.
+         * The eyebrow above it says which of the dialog's several pieces of prose this one is.
+         */
+        <div className="modal__ask">
+          <p className="modal__asklabel">Question</p>
+          <h2 className="modal__asktext">{saved.question}</h2>
+        </div>
       }
     >
       <ChartCard chart={saved.chart} expanded />
-      <ChartDetails saved={saved} />
+      <ChartDetails saved={saved} showQuestion={false} />
     </Modal>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from './Icon';
 import { fetchTranscriptSource, startAnalytics } from '../lib/api';
 import type { StartedJob, TranscriptSource } from '../types';
 
@@ -77,7 +78,8 @@ export function AddMeeting({ onQueued }: { onQueued: () => void }) {
   if (!open) {
     return (
       <button type="button" className="button button--ghost add__open" onClick={() => setOpen(true)}>
-        + Add meeting
+        <Icon name="add" size={18} />
+        Add meeting
       </button>
     );
   }
@@ -86,8 +88,13 @@ export function AddMeeting({ onQueued }: { onQueued: () => void }) {
     <form className="add" onSubmit={submit}>
       <div className="add__head">
         <span className="group__label add__title">Process a meeting</span>
-        <button type="button" className="button button--ghost" onClick={() => setOpen(false)}>
-          Close
+        <button
+          type="button"
+          className="iconbutton iconbutton--small"
+          aria-label="Close"
+          onClick={() => setOpen(false)}
+        >
+          <Icon name="close" size={18} />
         </button>
       </div>
 

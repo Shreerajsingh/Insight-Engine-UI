@@ -56,6 +56,20 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
   // findings, and a global answer that does not say which is showing half a number.
   const across = bundle.meetingId === null ? bundle.meetingCount : null;
 
+  /**
+   * The query ran, and the corpus holds nothing that matches it.
+   *
+   * Distinguished from every other reason there is no chart, because it is the one that is not a
+   * failure and the one the user can act on. Every statement here has to hold before we say it:
+   * at least one query ran, none of them errored, and every one came back empty. A question that
+   * errored, or that returned rows the charting agent then declined to plot, is a different
+   * situation and gets the messages further down.
+   */
+  const noRows =
+    bundle.sql.length > 0 &&
+    bundle.sql.every((result) => result.error === null && result.rowCount === 0) &&
+    charts.length === 0;
+
   return (
     <>
       {across !== null && (
@@ -64,7 +78,7 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
         </p>
       )}
 
-      <p className="answer__text">{prose}</p>
+      {noRows ? <NoRows answer={answer} across={across} /> : <p className="answer__text">{prose}</p>}
 
       <div className="answer__body">
         {charts.length > 0 && (
@@ -135,6 +149,34 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
         <Provenance answer={answer} />
       </div>
     </>
+  );
+}
+
+/**
+ * What to show when the question was answerable and the answer is "nothing".
+ *
+ * The bare row count this replaced — "0 rows came back for this question." — is true and useless:
+ * it reads as a malfunction, and the two things someone actually needs are missing from it. The
+ * first is that the pipeline worked, so there is nothing to retry. The second is what the planner
+ * took the question to mean, because an empty result has two very different causes — the corpus
+ * genuinely holds none of what was asked for, or the planner looked somewhere else — and the
+ * interpretation is what separates them. It is already fetched; it was only ever behind the fold.
+ */
+function NoRows({ answer, across }: { answer: Answer; across: number | null }) {
+  const { bundle } = answer.result!;
+  const scope = across === null ? 'this meeting' : `these ${across} meetings`;
+
+  return (
+    <div className="answer__empty">
+      <p className="answer__text">Nothing in {scope} matches this question.</p>
+      <p className="answer__emptynote">
+        The query ran without error and came back empty, so there is nothing to chart and nothing
+        to retry — this is an answer, not a failure. It was read as{' '}
+        <em>{bundle.plan.interpretation}</em>. If that is not the question you meant, rephrasing it
+        is what changes the result; if it is, {scope} genuinely {across === 1 || across === null ? 'holds' : 'hold'}{' '}
+        none of what it asked for.
+      </p>
+    </div>
   );
 }
 

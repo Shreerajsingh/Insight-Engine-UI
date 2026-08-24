@@ -67,7 +67,7 @@ export function MeetingInfo({
         )}
 
         <p className="info__label">Details</p>
-        <dl className="facts">
+        <dl className="facts facts--stacked">
           <dt>Meeting id</dt>
           <dd>{meeting.meetingId}</dd>
 

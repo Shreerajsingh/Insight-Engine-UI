@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Icon } from './Icon';
 
 /**
  * The overlay shell: a backdrop, a panel, and the two behaviours a modal has to get right.
@@ -22,6 +23,12 @@ export function Modal({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, []);
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -49,11 +56,22 @@ export function Modal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="modal__panel" style={{ width: `min(${width}px, 100%)` }}>
+      <div
+        ref={panelRef}
+        className="modal__panel"
+        tabIndex={-1}
+        style={{ width: `min(${width}px, 100%)` }}
+      >
         <header className="modal__head">
           {head}
-          <button type="button" className="button button--ghost" autoFocus onClick={onClose}>
-            Close
+          <button
+            type="button"
+            className="iconbutton"
+            aria-label="Close"
+            title="Close"
+            onClick={onClose}
+          >
+            <Icon name="close" size={20} />
           </button>
         </header>
 

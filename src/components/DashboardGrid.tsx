@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChartCard } from './ChartCard';
+import { Icon } from './Icon';
 import { ChartDetails, ChartExpanded } from './ChartDetails';
 import { ConfirmButton } from './ConfirmButton';
 import type { SavedChart, Span } from '../types';
@@ -101,7 +102,7 @@ export function DashboardGrid({
                 }
               }}
             >
-              ⠿
+              <Icon name="drag" size={18} />
             </span>
 
             <span className="dash__question" title={saved.question}>
@@ -116,7 +117,7 @@ export function DashboardGrid({
               title="The question, the answer and the quotes behind this chart"
               onClick={() => toggleInfo(saved.id)}
             >
-              ⓘ
+              <Icon name="info" size={18} />
             </button>
 
             <button
@@ -126,7 +127,7 @@ export function DashboardGrid({
               title="Open at full size"
               onClick={() => setExpandedId(saved.id)}
             >
-              ⤢
+              <Icon name="expand" size={18} />
             </button>
 
             <span className="dash__spans" role="group" aria-label="Card width">

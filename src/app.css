@@ -1,64 +1,578 @@
-/* Layout and components. Every colour here is a token from theme.css. */
+/*
+ * Layout and components, in the Google Cloud console's visual language. Every colour here is a
+ * token from theme.css.
+ *
+ * Four conventions carry most of the resemblance, and they are worth naming because every rule
+ * below is an application of one of them:
+ *
+ *   1. Regions are separated by hairlines, not by shadow. The console is flat — shadow is reserved
+ *      for things that genuinely float over the page (a dialog, a menu), and a card that casts one
+ *      while sitting still reads as unmoored.
+ *   2. Selection is a tint plus a bar, never a border. A row that gains a 1px outline when picked
+ *      shifts by a pixel and makes the whole list twitch; a tinted background and a solid bar down
+ *      the leading edge change nothing about the row's geometry.
+ *   3. Actions are text with a glyph. The console's toolbars are icon-and-label text buttons in the
+ *      accent colour, and they only become outlined or filled when the action is the page's point.
+ *   4. Density is deliberate. 14px body, 40px rows, 12px labels — it is what lets a nav hold twenty
+ *      resources and a header hold four facts without either of them scrolling.
+ */
 
-.app {
+/* ---- shell ---- */
+
+/*
+ * Three rows: the bar, the breadcrumb rail, and everything else. Only the third scrolls, which is
+ * what keeps the bar and the path to here on screen without either of them being `position: sticky`
+ * and fighting the panes underneath for a stacking context.
+ */
+.shell {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   height: 100%;
 }
 
-@media (max-width: 900px) {
-  .app {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-}
-
-/* ---- sidebar ---- */
-
-.sidebar {
+.shell__body {
   display: flex;
-  flex-direction: column;
   min-height: 0;
-  border-right: 1px solid var(--border);
-  background: var(--surface-1);
 }
 
-.sidebar__head {
+/* ---- app bar ---- */
+
+.topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  padding: 18px 20px 14px;
+  height: 64px;
+  padding: 0 16px;
+  background: var(--surface-bar);
   border-bottom: 1px solid var(--border);
 }
 
-.sidebar__title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: none;
+  padding: 5px 10px 5px 6px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-primary);
+  text-decoration: none;
 }
 
-.sidebar__scroll {
+.brand:hover {
+  background: var(--hover);
+  text-decoration: none;
+}
+
+.brand__word {
+  font-size: 19px;
+  font-weight: 500;
+  /* Negative tracking is what separates a wordmark from a sentence at this size. */
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* The qualifier, lighter and spaced off the product word rather than joined to it. */
+.brand__word2 {
+  margin-left: 0.3em;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1100px) {
+  .brand__word {
+    display: none;
+  }
+}
+
+/*
+ * Search: the bar's widest element, centred by the flex margins rather than by a fixed width, so it
+ * grows into whatever the bar has left.
+ *
+ * The wrapper is what the results panel is positioned against, and it is also why the panel can be
+ * absolute: the bar is a flex row, and a panel participating in that layout would push the
+ * utilities off the right edge the moment it opened.
+ */
+.omnibox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Sunken rather than outlined at rest — the console's search is a filled field that gains an
+   outline and a shadow when you are actually in it. */
+.omni {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 8px 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+
+.omni:focus-within {
+  background: var(--surface-raised);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Open, the field and the panel are one surface: the field keeps its rounding at the top and
+   squares off at the bottom so the seam between them reads as a join rather than a gap. */
+.omni--open {
+  background: var(--surface-raised);
+  border-color: var(--border);
+  border-bottom-color: transparent;
+  border-radius: 22px 22px 0 0;
+}
+
+.omni__icon {
+  color: var(--text-muted);
+}
+
+.omni .omni__input,
+.omni .omni__input:focus,
+.omni .omni__input:focus-visible {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  /* Never a ring on the input: `.omni:focus-within` below is this field's focus indicator. */
+  outline: none;
+  box-shadow: none;
+  font-size: 14px;
+}
+
+.omni__input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Safari draws its own clear affordance on a search input, which would sit beside ours. */
+.omni__input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+/*
+ * The results panel. Floating, so it gets a shadow — the one place in the bar that earns one.
+ * Capped in height as well as in count: eight rows is the cap, and the scroll is there for the
+ * narrow viewport where eight rows are taller than what is left of the screen.
+ */
+.omni__results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  padding: 4px 0 6px;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 22px 22px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+}
+
+.omni__result {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.omni__result:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+/* Dimmed, not hidden: the row is still how you learn the meeting exists. */
+.omni__result:disabled {
+  cursor: default;
+  color: var(--text-muted);
+}
+
+.omni__glyph {
+  margin-top: 2px;
+}
+
+.omni__glyph--good { color: var(--good); }
+.omni__glyph--warning { color: var(--warning); }
+.omni__glyph--critical { color: var(--critical); }
+.omni__glyph--muted { color: var(--text-muted); }
+
+.omni__resulttext {
+  min-width: 0;
+}
+
+.omni__resulttitle {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.omni__resultmeta {
+  display: block;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Both the no-matches line and the "n more" line: a statement about the list, not a row in it. */
+.omni__none {
+  margin: 0;
+  padding: 8px 16px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.topbar__tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+@media (max-width: 700px) {
+  .topbar {
+    padding: 0 8px;
+  }
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 14px;
+  font-weight: 500;
+  user-select: none;
+}
+
+/* ---- breadcrumb rail ---- */
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  min-height: 40px;
+  padding: 6px 20px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.crumbs__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crumbs__sep {
+  padding: 0 6px;
+  color: var(--text-muted);
+}
+
+.crumbs__link {
+  padding: 2px 4px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.crumbs__link:hover {
+  background: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.crumbs__here {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 46vw;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* ---- left nav ---- */
+
+/*
+ * 256px, the console's width, and it collapses by animating to zero rather than by unmounting: the
+ * group folds and the scroll position are state someone set, and losing them on every collapse is
+ * the thing that makes a hideable panel not worth hiding.
+ */
+.nav {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  width: 256px;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface-1);
+  border-right: 1px solid var(--border);
+  transition: width 0.2s ease;
+}
+
+.nav--closed {
+  width: 0;
+  border-right-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav {
+    transition: none;
+  }
+}
+
+.nav__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+  height: 56px;
+  padding: 0 8px 0 20px;
+}
+
+.nav__headicon {
+  color: var(--text-secondary);
+}
+
+.nav__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.nav__scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 8px;
+  padding-bottom: 8px;
 }
 
-.group + .group {
+.nav__rule {
+  height: 1px;
+  margin: 8px 0;
+  background: var(--border);
+}
+
+.nav__foot {
+  flex: none;
+  padding: 8px;
   border-top: 1px solid var(--border);
-  margin-top: 6px;
+}
+
+/*
+ * A nav row. Selection is a tint plus a leading bar — see convention 2 at the top of the file.
+ * The transparent bar is declared on the resting state so a row does not shift by 3px when picked.
+ */
+.navitem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 9px 16px 9px 17px;
+  border: none;
+  border-left: 3px solid transparent;
+  background: none;
+  text-align: left;
+  color: var(--text-secondary);
+}
+
+.navitem:hover {
+  background: var(--hover);
+}
+
+.navitem--on,
+.navitem--on:hover {
+  background: var(--accent-wash);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+
+.navitem__body {
+  min-width: 0;
+}
+
+.navitem__title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.navitem__meta {
+  display: block;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.navitem--on .navitem__meta {
+  color: inherit;
+  opacity: 0.85;
+}
+
+/* Below the console's own breakpoint the nav floats over the board instead of squeezing it: at
+   this width they cannot both be useful, and the one you came for is the board. */
+@media (max-width: 900px) {
+  .nav {
+    position: fixed;
+    top: 105px;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    width: 288px;
+    box-shadow: var(--shadow-raised);
+  }
+
+  .nav--closed {
+    width: 0;
+    box-shadow: none;
+  }
+}
+
+/*
+ * The rail. 56px, which is the width a 40px round target needs with the console's 8px gutters —
+ * narrow enough that collapsing the panel still buys the board almost all of its 256px back.
+ */
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  width: 56px;
+  padding: 8px 0;
+  background: var(--surface-1);
+  border-right: 1px solid var(--border);
+}
+
+.railbutton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary);
+}
+
+.railbutton:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+/* Selection is a filled circle here rather than the panel's tint-and-bar: there is no room for a
+   leading bar, and a 56px column has nothing else in it for a bar to align against. */
+.railbutton--on,
+.railbutton--on:hover {
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+/*
+ * The count, on the icon. A rail has no room for labels, so without this every button is a glyph
+ * whose only promise is "a list of something" — and three of the four are routinely empty, which
+ * is exactly what you want to know before clicking rather than after.
+ */
+.railbutton__count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 16px;
+  padding: 0 4px;
+  border: 2px solid var(--surface-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 14px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.railbutton--on .railbutton__count {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.rail__rule {
+  width: 24px;
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+
+/* Pushes the add action to the foot, matching where the open panel keeps it. */
+.rail__spacer {
+  flex: 1;
+}
+
+/* Below the console's breakpoint the panel already floats over the board, so a rail holding 56px
+   open beside it would be taking width from the thing it is meant to be revealing. The bar's
+   hamburger is the way back at this size. */
+@media (max-width: 700px) {
+  .rail {
+    display: none;
+  }
+}
+
+/* ---- nav groups ---- */
+
+.group + .group {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
 }
 
 .group__label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 12px 6px;
+  gap: 6px;
+  padding: 10px 16px 6px 14px;
   font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.06em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
@@ -76,16 +590,15 @@
 
 .group__count {
   margin-left: auto;
-  font-weight: 500;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
 .group__chevron {
-  display: inline-block;
-  width: 8px;
-  font-size: 13px;
-  line-height: 1;
+  display: grid;
+  place-items: center;
   transition: transform 0.15s ease;
+  color: var(--text-muted);
 }
 
 .group__chevron--open {
@@ -98,92 +611,54 @@
   }
 }
 
-/* The global entry sits above the filter and the list, and is not one of them: it is the
-   other thing you can look at, not another meeting. */
-.sidebar__global {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.globalnav {
-  display: block;
-  width: 100%;
-  padding: 9px 11px;
-  text-align: left;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  color: inherit;
-}
-
-.globalnav:hover {
-  background: var(--surface-2);
-  border-color: var(--border-strong);
-}
-
-/* Selected the same way a meeting row is, so "which am I looking at" reads identically
-   whether the answer is a meeting or the whole corpus. */
-.globalnav--on,
-.globalnav--on:hover {
-  background: var(--accent-wash);
-  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
-.globalnav__title {
-  display: block;
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-
-.globalnav__meta {
-  display: block;
-  margin-top: 2px;
-  font-size: 11.5px;
+.group__hint {
+  margin: 0 16px 4px 20px;
+  font-size: 12px;
+  line-height: 1.4;
   color: var(--text-muted);
 }
 
-.sidebar__filter {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-}
+/* ---- meeting rows ---- */
 
-.sidebar__filter .field__input {
-  padding: 6px 9px;
-  font-size: 12.5px;
-}
-
+/* Selected the same way the nav item above them is, so "which am I looking at" reads identically
+   whether the answer is one meeting or the whole corpus. */
 .meeting {
-  padding: 9px 12px 10px;
-  margin-bottom: 2px;
-  border: 1px solid transparent;
-  border-radius: var(--radius);
+  padding: 8px 12px 9px 17px;
+  border-left: 3px solid transparent;
 }
 
 .meeting:hover {
-  background: var(--surface-2);
+  background: var(--hover);
 }
 
 .meeting--selected,
 .meeting--selected:hover {
   background: var(--accent-wash);
-  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  border-left-color: var(--accent);
 }
 
 .meeting__top {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
 }
+
+/* The status glyph in front of the title, as the console fronts every row in a resource list. */
+.meeting__glyph {
+  margin-top: 2px;
+  color: var(--text-muted);
+}
+
+.meeting__glyph--good { color: var(--good); }
+.meeting__glyph--warning { color: var(--warning); }
+.meeting__glyph--critical { color: var(--critical); }
 
 /* The picking target: the whole title block, not a link inside it. */
 .meeting__pick {
   display: block;
   flex: 1;
   min-width: 0;
-  padding: 2px 0;
+  padding: 0;
   text-align: left;
   border: none;
   background: none;
@@ -193,405 +668,716 @@
   cursor: default;
 }
 
-.meeting__foot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.meeting__action {
-  flex: none;
-  align-self: center;
-}
-
-.group__hint {
-  margin: 0 12px 8px;
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-
-.meeting__meter {
-  margin-bottom: 2px;
-}
-
-.meeting__error {
-  margin-top: 6px;
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-
 .meeting__title {
   display: block;
-  font-size: 13.5px;
-  font-weight: 550;
-  line-height: 1.35;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.meeting--selected .meeting__title {
+  color: var(--accent);
 }
 
 .meeting__meta {
   display: block;
-  margin-top: 3px;
+  margin-top: 1px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
-/* Tags read as data on the row, not as controls: no hover, no pointer. */
-.meeting__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
+/*
+ * The row's overflow control, revealed on hover — the console's `⋮`.
+ *
+ * Hidden at rest so twenty rows do not carry twenty identical glyphs, but it stays visible while
+ * focused, or the only way to reach it with a keyboard would be to tab to something invisible.
+ */
+.meeting__more {
+  flex: none;
+  opacity: 0;
 }
+
+.meeting:hover .meeting__more,
+.meeting__more:focus-visible,
+.meeting--selected .meeting__more {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .meeting__more {
+    opacity: 1;
+  }
+}
+
+.meeting__foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 5px 0 0 22px;
+}
+
+/*
+ * The row's action: accent text, sized to the line it sits on.
+ *
+ * Left-aligned in the footer beside the status rather than pushed to the trailing edge. When a row
+ * has no status to show — every not-yet-generated one — a right-aligned button is a lone lozenge
+ * floating at the far margin, and four of them down the panel read as a column of unrelated
+ * controls rather than as one action repeated per row.
+ */
+.meeting__action {
+  flex: none;
+  padding: 2px 8px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.meeting__action:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.meeting__action:disabled {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.meeting__step {
+  margin: 6px 0 0 30px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.meeting__meter {
+  margin: 6px 0 2px 30px;
+}
+
+.meeting__error {
+  margin: 6px 0 0 30px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--critical);
+}
+
+/* ---- chips and tags ---- */
 
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
+  gap: 4px;
+  padding: 1px 8px;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--surface-2);
-  font-size: 10.5px;
-  font-weight: 650;
-  letter-spacing: 0.03em;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: 11px;
+  font-weight: 500;
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .tag--read {
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .tag__x {
   border: 0;
   background: none;
-  padding: 0 0 0 1px;
-  font-size: 13px;
-  line-height: 1;
+  padding: 0;
+  display: grid;
+  place-items: center;
   cursor: pointer;
   color: var(--text-muted);
 }
 
 .tag__x:hover:not(:disabled) {
-  color: var(--text);
+  color: var(--text-primary);
 }
 
 .taginput__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 7px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .taginput__suggest {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
-  margin-top: 7px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .taginput__suggestlabel {
-  font-size: 10.5px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
-}
-
-.chip--tiny {
-  padding: 2px 7px;
-  font-size: 11px;
-}
-
-/* A hint that sits above a field rather than beside a button needs to be a block. */
-.info__hint--block {
-  display: block;
-  margin: 0 0 7px;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-
-.info__focus {
-  width: 100%;
-  resize: vertical;
-  font: inherit;
-  line-height: 1.45;
-}
-
-.info__count {
-  margin: 3px 0 0;
-  text-align: right;
-  font-size: 10.5px;
-  color: var(--text-muted);
-}
-
-.meeting__step {
-  margin-top: 6px;
-  font-size: 11.5px;
-  color: var(--text-secondary);
-}
-
-/* A meter, not a chart: one ratio against a limit, on the same ramp. */
-.meter {
-  height: 4px;
-  margin-top: 6px;
-  border-radius: 999px;
-  background: var(--grid);
-  overflow: hidden;
-}
-
-.meter__fill {
-  height: 100%;
-  border-radius: 999px;
-  background: var(--accent);
-  transition: width 0.4s ease;
-}
-
-/* Status never rides on colour alone — it always carries its label. */
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.pill__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-muted);
-}
-
-.pill--good .pill__dot { background: var(--good); }
-.pill--running .pill__dot { background: var(--warning); }
-.pill--failed .pill__dot { background: var(--critical); }
-
-/* ---- main ---- */
-
-/*
- * No top padding, on purpose. A sticky child's offsets are resolved against the scroll container's
- * PADDING box, so `top: 0` with 28px of padding here would park the header 28px down and let the
- * board scroll through the gap above it. The space is moved into the sticky header itself.
- */
-.main {
-  min-width: 0;
-  overflow-y: auto;
-  padding: 0 32px 64px;
-}
-
-@media (max-width: 900px) {
-  .main { padding: 0 16px 48px; }
-}
-
-/*
- * One row: identity left, views right.
- *
- * Left-aligned against the sidebar rather than centred in the viewport — an auto margin on a wide
- * screen leaves a gap in front of the title that reads as a mistake. The cap only stops charts
- * stretching absurdly on an ultrawide display.
- */
-.head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  max-width: 1600px;
-}
-
-.head__ident {
-  /* min-width lets the flex child shrink, which is what allows the title to ellipsis. */
-  min-width: 0;
-  padding-bottom: 9px;
-}
-
-.head__title {
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 17px;
-  font-weight: 650;
-  letter-spacing: -0.015em;
-}
-
-.head__meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 4px 0 0;
-  min-width: 0;
-  font-size: 11.5px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.head__facts {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* The meeting type as a chip rather than an uppercase line of its own above the title. */
-.head__type {
-  flex: none;
-  padding: 1px 6px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-}
-
-@media (max-width: 700px) {
-  .head {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 6px;
-  }
-}
-
-/*
- * The meeting and its two views stay put while the board scrolls.
- *
- * Full-bleed by negative margins that cancel the scroll container's padding, then re-applied as
- * padding here: `top: 0` on a sticky child sticks to the container's padding edge, which would leave
- * a strip of scrolling page visible above it. The background is opaque for the same reason — charts
- * passing behind a translucent header read as a rendering fault.
- */
-.main__sticky {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  /* Full-bleed across the scroll container, and it owns the top padding the container gave up. */
-  margin: 0 -32px 18px;
-  padding: 12px 32px 0;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
-}
-
-@media (max-width: 900px) {
-  .main__sticky {
-    margin: 0 -16px 14px;
-    padding: 10px 16px 0;
-  }
-}
-
-
-
-
-.board {
-  max-width: 1600px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* ---- ask box ---- */
-
-.ask {
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-  box-shadow: var(--shadow);
-}
-
-.ask__row {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
-}
-
-.ask__input {
-  flex: 1;
-  min-height: 42px;
-  max-height: 140px;
-  padding: 11px 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface-raised);
-  resize: vertical;
-  line-height: 1.4;
-}
-
-.ask__input::placeholder { color: var(--text-muted); }
-
-.button {
-  padding: 11px 16px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  background: var(--surface-raised);
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.button:hover:not(:disabled) { background: var(--surface-2); }
-
-.button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.button--primary {
-  background: var(--accent);
-  border-color: transparent;
-  color: var(--accent-ink);
-}
-
-.button--primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 88%, black);
-}
-
-.button--ghost {
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 550;
-  border-radius: 7px;
-  background: none;
-  border-color: var(--border);
-  color: var(--text-secondary);
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
+/* An assist chip: outlined, pill, and it fills with the accent tint on hover rather than changing
+   its border, so a row of them does not jump. */
 .chip {
-  padding: 5px 10px;
+  padding: 6px 14px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: none;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
 .chip:hover:not(:disabled) {
-  background: var(--accent-wash);
-  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--accent-hover);
+  color: var(--accent);
+}
+
+.chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.chip--tiny {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+/* ---- buttons ---- */
+
+/*
+ * Three kinds, and the distinction is load-bearing:
+ *   `.textbutton` for a toolbar action — accent text, a glyph, no container until hovered;
+ *   `.button` for an outlined action — a pill with a hairline;
+ *   `.button--primary` for the one filled action a view is about.
+ */
+.textbutton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.textbutton:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.textbutton:disabled {
+  color: var(--text-muted);
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Sized to a table row rather than to a toolbar. */
+.textbutton--compact {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.button:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button--primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.button--primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, var(--text-primary));
+  box-shadow: var(--shadow);
+}
+
+.button--primary:disabled {
+  background: var(--surface-sunken);
+  border-color: transparent;
+  color: var(--text-muted);
+}
+
+/* The quiet variant: a smaller outlined button for a row-level action. */
+.button--ghost {
+  height: 30px;
+  padding: 0 14px;
+  border-color: var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.button--ghost:hover:not(:disabled) {
+  background: var(--hover);
   color: var(--text-primary);
+}
+
+/* An icon-only control. Circular hover target, 40px, which is the console's and also the smallest
+   thing a thumb reliably hits. */
+.iconbutton {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary);
+}
+
+.iconbutton:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.iconbutton:active:not(:disabled) {
+  background: var(--pressed);
+}
+
+.iconbutton:disabled {
+  color: var(--text-muted);
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Confirmed: the tick takes the success colour, and the label beside it says so too. */
+.iconbutton--done,
+.iconbutton--done:hover {
+  color: var(--good);
+}
+
+.iconbutton--small {
+  width: 32px;
+  height: 32px;
+}
+
+/* Spun while the fetch it triggered is in flight, so the click has an answer before the data does. */
+.iconbutton--spinning .icon {
+  animation: spin 0.8s linear infinite;
+}
+
+/* ---- main pane ---- */
+
+/*
+ * No top padding, on purpose. A sticky child's offsets are resolved against the scroll container's
+ * PADDING box, so `top: 0` with padding here would park the tab bar that far down and let the board
+ * scroll through the gap above it. The space is moved into the first child instead.
+ */
+.main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 0 24px 64px;
+  background: var(--surface-2);
+}
+
+@media (max-width: 900px) {
+  .main {
+    padding: 0 16px 48px;
+  }
+}
+
+/* ---- status band ---- */
+
+/* One panel, hairline, flat: a region of the page rather than something floating over it. */
+.statusband {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.statusband__ident {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.statusband__glyph {
+  margin-top: 3px;
+  color: var(--text-muted);
+}
+
+.statusband__glyph--good { color: var(--good); }
+.statusband__glyph--warning { color: var(--warning); }
+.statusband__glyph--critical { color: var(--critical); }
+
+.statusband__text {
+  min-width: 0;
+}
+
+.statusband__headline {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.statusband__word {
+  font-weight: 500;
+}
+
+.statusband__word--good { color: var(--good); }
+.statusband__word--warning { color: var(--warning); }
+.statusband__word--critical { color: var(--critical); }
+.statusband__word--muted { color: var(--text-muted); }
+
+.statusband__sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* The copy control sits in a fact's value slot, so it is sized to that line rather than to a
+   toolbar — and pulled left by its own padding so its glyph aligns with the label above it
+   instead of with the edge of its hover circle. */
+.facts__value .iconbutton {
+  width: 28px;
+  height: 28px;
+  margin: -4px 0 -4px -6px;
+}
+
+/* The identifying facts, as stacked label-over-value pairs across the top right. */
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 36px;
+  flex: none;
+  margin: 0;
+}
+
+.facts__item {
+  min-width: 0;
+  max-width: 200px;
+}
+
+.facts__label {
+  margin: 0 0 3px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.facts__value {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.facts__value--mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+@media (max-width: 1100px) {
+  .statusband {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .facts {
+    gap: 8px 28px;
+  }
+
+}
+
+/* The band is the first thing in the pane now that the title row is gone, so it owns the top
+   padding the scroll container gave up — and the gap to whatever follows it, since a listing page
+   has no tab bar between the two to provide one. */
+.statusband {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+/* ---- tab bar ---- */
+
+/*
+ * Full-bleed across the scroll container by negative margins, then re-applied as padding here:
+ * `top: 0` on a sticky child sticks to the container's padding edge, which would leave a strip of
+ * scrolling page visible above it. The background is opaque for the same reason — charts passing
+ * behind a translucent bar read as a rendering fault.
+ */
+.tabbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 -24px 20px;
+  padding: 0 24px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .tabbar {
+    margin: 0 -16px 16px;
+    padding: 0 16px;
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  /* The bar draws the rule, so the tabs sit flush and their underline lands on it. */
+  margin-bottom: -1px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 16px;
+  border: none;
+  /* The indicator is declared transparent at rest so selecting a tab does not move it. */
+  border-bottom: 3px solid transparent;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.tab:hover {
+  background: var(--hover);
+  color: var(--text-secondary);
+}
+
+.tab--on,
+.tab--on:hover {
+  background: none;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab__count {
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.tab--on .tab__count {
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+/* ---- board ---- */
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* A listing page's table sits in its own panel, the way every other block in the pane does. */
+.listing {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.listing .table {
+  min-width: 720px;
+}
+
+.listing .table th {
+  padding: 12px 16px;
+  background: var(--surface-1);
+}
+
+.listing .table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+
+/* The last row's rule would otherwise draw against the panel's own border. */
+.listing .table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.listing__statuscol {
+  width: 140px;
+}
+
+.listing__actioncol {
+  width: 120px;
+  text-align: right;
+}
+
+.listing__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.listing__glyph--good { color: var(--good); }
+.listing__glyph--warning { color: var(--warning); }
+.listing__glyph--critical { color: var(--critical); }
+.listing__glyph--muted { color: var(--text-muted); }
+
+/* The title, as a link when the meeting has somewhere to go. */
+.listing__link {
+  display: block;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.listing__link:hover {
+  text-decoration: underline;
+}
+
+.listing__title {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.listing__id {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.listing__when {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.listing__step {
+  margin-bottom: 6px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* Wrapped rather than truncated: a stack trace's first line is the useful part, and an ellipsis
+   here would hide the only thing this column exists to show. */
+.listing__error {
+  display: block;
+  max-width: 46ch;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--critical);
+}
+
+/* A listing brings its own panel, so it does not need the board's gap above it. */
+.board--flush {
+  gap: 0;
+}
+
+/* ---- ask box ---- */
+
+.ask {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+}
+
+.ask__row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.ask__input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 160px;
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.ask__input:focus {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.ask__input::placeholder {
+  color: var(--text-muted);
+}
+
+.ask__send {
+  height: 44px;
 }
 
 /* ---- answer ---- */
@@ -600,7 +1386,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-1);
-  box-shadow: var(--shadow);
 }
 
 .answer__head {
@@ -608,44 +1393,77 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 18px 0;
+  padding: 16px 20px 0;
 }
 
 .answer__question {
   margin: 0;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-muted);
 }
 
 /* The denominator, above the prose: a cross-meeting number is only readable next to how
    many meetings it is over. */
 .answer__scope {
-  margin: 8px 18px 0;
+  margin: 10px 20px 0;
   font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .answer__text {
-  margin: 8px 18px 0;
+  margin: 8px 20px 0;
   font-size: 16px;
   line-height: 1.5;
-  letter-spacing: -0.01em;
 }
 
-.answer__body { padding: 16px 18px 18px; }
+.answer__body {
+  padding: 16px 20px 20px;
+}
+
+/*
+ * The empty-result state. Sunken rather than bordered like a `.note`: an answer that came back
+ * empty is still this card's answer, and boxing it would read as an error interrupting the card
+ * rather than as the content of it.
+ */
+.answer__empty {
+  margin: 8px 20px 0;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.answer__empty .answer__text {
+  margin: 0;
+}
+
+.answer__emptynote {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* The planner's reading of the question, quoted inside the sentence about it. */
+.answer__emptynote em {
+  color: var(--text-primary);
+  font-style: normal;
+  font-weight: 500;
+}
 
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 /* A table or a wide chart takes the full row rather than being squeezed. */
-.grid > .card--wide { grid-column: 1 / -1; }
+.grid > .card--wide {
+  grid-column: 1 / -1;
+}
 
 /* ---- chart card ---- */
 
@@ -653,7 +1471,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 14px 14px 10px;
+  padding: 16px 16px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-1);
@@ -663,32 +1481,31 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 2px;
 }
 
 .card__title {
   margin: 0;
-  font-size: 13.5px;
-  font-weight: 620;
-  letter-spacing: -0.01em;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .card__subtitle {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.45;
   color: var(--text-secondary);
 }
 
 .card__plot {
-  margin-top: 12px;
+  margin-top: 14px;
   width: 100%;
 }
 
 .card__foot {
-  margin-top: 8px;
-  font-size: 11px;
+  margin-top: 10px;
+  font-size: 11.5px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -700,19 +1517,19 @@
   flex-direction: column;
   justify-content: center;
   flex: 1;
-  padding: 14px 0 10px;
+  padding: 16px 0 10px;
 }
 
 .stat__value {
   font-size: 48px;
-  font-weight: 620;
+  font-weight: 400;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
 }
 
 .stat__caption {
-  margin-top: 8px;
-  font-size: 12.5px;
+  margin-top: 10px;
+  font-size: 13px;
   color: var(--text-secondary);
 }
 
@@ -720,35 +1537,39 @@
 
 .table__scroll {
   overflow-x: auto;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 
 .table th {
   text-align: left;
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--axis);
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
 .table td {
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-bottom: 1px solid var(--grid);
   color: var(--text-secondary);
   vertical-align: top;
 }
 
-.table td:first-child { color: var(--text-primary); }
+.table tbody tr:hover td {
+  background: var(--hover);
+}
+
+.table td:first-child {
+  color: var(--text-primary);
+}
 
 .table td.num {
   text-align: right;
@@ -759,24 +1580,24 @@
 /* ---- tooltip ---- */
 
 .tooltip {
-  padding: 8px 10px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   background: var(--surface-raised);
-  box-shadow: var(--shadow);
-  font-size: 12px;
+  box-shadow: var(--shadow-raised);
+  font-size: 12.5px;
 }
 
 .tooltip__label {
-  font-weight: 620;
-  margin-bottom: 5px;
+  font-weight: 500;
+  margin-bottom: 6px;
   color: var(--text-primary);
 }
 
 .tooltip__row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   color: var(--text-secondary);
   line-height: 1.6;
 }
@@ -790,7 +1611,7 @@
 
 .tooltip__value {
   margin-left: auto;
-  padding-left: 10px;
+  padding-left: 12px;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
@@ -800,15 +1621,15 @@
 .legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-top: 10px;
+  gap: 4px 16px;
+  margin-top: 12px;
 }
 
 .legend__item {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
@@ -818,31 +1639,74 @@
   border-radius: 2px;
 }
 
+/* ---- meter, status pill ---- */
+
+/* A meter, not a chart: one ratio against a limit, on the same ramp. */
+.meter {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--grid);
+  overflow: hidden;
+}
+
+.meter__fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+/* Status never rides on colour alone — it always carries its label. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--surface-sunken);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pill__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.pill--good .pill__dot { background: var(--good); }
+.pill--running .pill__dot { background: var(--warning); }
+.pill--failed .pill__dot { background: var(--critical); }
+
 /* ---- notes, evidence, disclosure ---- */
 
 .notes {
-  margin: 14px 0 0;
-  padding: 0 0 0 16px;
-  font-size: 12px;
+  margin: 16px 0 0;
+  padding: 0 0 0 18px;
+  font-size: 13px;
   line-height: 1.6;
   color: var(--text-secondary);
 }
 
 .section__label {
-  margin: 18px 0 8px;
+  margin: 20px 0 8px;
   font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.06em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .quote {
   margin: 0 0 8px;
-  padding: 9px 12px;
-  border-left: 2px solid var(--axis);
-  background: var(--surface-2);
-  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--border-strong);
+  background: var(--surface-sunken);
+  border-radius: 0 var(--radius) var(--radius) 0;
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-secondary);
@@ -850,35 +1714,34 @@
 
 .quote__who {
   display: block;
-  margin-top: 5px;
-  font-size: 11.5px;
+  margin-top: 6px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
 .disclosure {
-  margin-top: 16px;
+  margin-top: 18px;
   border-top: 1px solid var(--border);
-  padding-top: 12px;
+  padding-top: 14px;
 }
 
 .disclosure summary {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: var(--accent);
   cursor: pointer;
 }
 
-.disclosure summary:hover { color: var(--text-secondary); }
-
+/* The console's log panes are monospace on a sunken ground, which is what this is. */
 .sql {
-  margin: 8px 0 0;
-  padding: 10px 12px;
+  margin: 10px 0 0;
+  padding: 12px 14px;
   overflow-x: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11.5px;
-  line-height: 1.6;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
   color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
@@ -887,62 +1750,100 @@
 /* ---- states ---- */
 
 .note {
-  padding: 12px 14px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-1);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.55;
   color: var(--text-secondary);
 }
 
-.note--error { border-left: 3px solid var(--critical); }
+.note--error {
+  border-left: 3px solid var(--critical);
+}
+
+/* Inside the nav, where a bordered box would be a card in a list of rows. */
+.note--flush {
+  margin: 4px 16px;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  font-size: 12.5px;
+}
+
+.note--flush.note--error {
+  color: var(--critical);
+}
 
 .empty {
-  max-width: 720px;
-  padding: 84px 24px 56px;
+  max-width: 640px;
+  padding: 72px 0 56px;
   color: var(--text-secondary);
-  line-height: 1.55;
+  line-height: 1.6;
+}
+
+.empty__icon {
+  margin-bottom: 16px;
+  color: var(--text-muted);
+}
+
+.empty__icon--critical {
+  color: var(--critical);
 }
 
 .empty__title {
-  margin: 0 0 6px;
-  font-size: 16px;
-  font-weight: 620;
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 400;
   color: var(--text-primary);
+}
+
+.empty code {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
 }
 
 .spinner {
   display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--axis);
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--grid);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinner { animation-duration: 2s; }
-  .meter__fill { transition: none; }
+  .spinner,
+  .iconbutton--spinning .icon {
+    animation-duration: 2.4s;
+  }
+
+  .meter__fill {
+    transition: none;
+  }
 }
 
 /* ---- add meeting ---- */
 
 .add__open {
-  width: calc(100% - 16px);
-  margin: 8px;
-  text-align: center;
-  border-style: dashed;
+  width: 100%;
+  justify-content: flex-start;
+  padding-left: 12px;
 }
 
 .add {
-  margin: 8px;
-  padding: 12px;
+  padding: 12px 12px 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
@@ -953,7 +1854,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .add__title {
@@ -962,43 +1863,58 @@
 
 .field {
   display: block;
-  margin-bottom: 9px;
+  margin-bottom: 12px;
 }
 
 .field__label {
   display: block;
-  margin-bottom: 4px;
-  font-size: 11.5px;
+  margin-bottom: 5px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
+/* A filled field with an outline, which is Material's text field short of the floating label —
+   and the label here sits above rather than inside, so there is nothing to float. */
 .field__input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 9px 12px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: 4px;
   background: var(--surface-raised);
-  font-size: 13px;
+  font-size: 13.5px;
 }
 
-.field__input::placeholder { color: var(--text-muted); }
+.field__input:focus {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.field__input::placeholder {
+  color: var(--text-muted);
+}
 
 .field--inline {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 12.5px;
   color: var(--text-secondary);
+}
+
+.field--inline input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
 }
 
 .add__submit {
   width: 100%;
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
 .add__note {
-  margin: 10px 0 0;
-  font-size: 12px;
+  margin: 12px 0;
 }
 
 /* ---- saved dashboard ---- */
@@ -1006,7 +1922,7 @@
 .dash {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 
 /* One column below tablet width: three-across charts are unreadable on a phone, and a span of
@@ -1028,7 +1944,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-1);
-  box-shadow: var(--shadow);
 }
 
 /* Where the dragged card would land. */
@@ -1038,23 +1953,23 @@
 }
 
 .dash__cell--dragging {
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .dash__bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 8px 0 10px;
+  gap: 6px;
+  padding: 8px 8px 0 8px;
 }
 
 .dash__handle {
   flex: none;
-  padding: 0 2px;
+  display: grid;
+  place-items: center;
+  padding: 2px;
   cursor: grab;
   color: var(--text-muted);
-  font-size: 13px;
-  line-height: 1;
   user-select: none;
 }
 
@@ -1068,25 +1983,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
+/* A segmented button: the console's width picker, one outline around the set. */
 .dash__spans {
   display: flex;
   flex: none;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius-pill);
   overflow: hidden;
 }
 
 .dash__span {
-  padding: 3px 8px;
+  padding: 3px 11px;
   border: none;
   background: none;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .dash__span + .dash__span {
@@ -1094,13 +2010,14 @@
 }
 
 .dash__span:hover {
-  background: var(--surface-2);
+  background: var(--hover);
 }
 
-.dash__span--on {
+.dash__span--on,
+.dash__span--on:hover {
   background: var(--accent-wash);
-  color: var(--text-primary);
-  font-weight: 600;
+  color: var(--accent);
+  font-weight: 500;
 }
 
 .dash__remove {
@@ -1114,84 +2031,44 @@
   padding-top: 6px;
 }
 
-/* ---- view tabs ---- */
-
-.tabs {
-  display: flex;
-  flex: none;
-  gap: 2px;
-  /* The sticky wrapper draws the rule, so the tabs sit flush against it and their active
-     underline lands on it rather than beside it. */
-  margin-bottom: -1px;
-}
-
-.tab {
-  padding: 6px 12px 8px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font-size: 13px;
-  font-weight: 550;
-  color: var(--text-muted);
-}
-
-.tab:hover {
-  color: var(--text-secondary);
-}
-
-.tab--on {
-  color: var(--text-primary);
-  border-bottom-color: var(--accent);
-}
-
-.tab__count {
-  margin-left: 5px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-/* ---- card details, and the expanded view ---- */
-
 .dash__icon {
   flex: none;
-  width: 24px;
-  height: 24px;
   display: grid;
   place-items: center;
+  width: 28px;
+  height: 28px;
   padding: 0;
-  border: 1px solid transparent;
-  border-radius: 7px;
+  border: none;
+  border-radius: 50%;
   background: none;
-  font-size: 13px;
-  line-height: 1;
   color: var(--text-muted);
 }
 
 .dash__icon:hover {
-  background: var(--surface-2);
+  background: var(--hover);
   color: var(--text-primary);
 }
 
 .dash__icon--on {
   background: var(--accent-wash);
-  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-  color: var(--text-primary);
+  color: var(--accent);
 }
 
+/* ---- info panel ---- */
+
 .info {
-  margin: 4px 14px 14px;
-  padding: 12px 14px;
+  margin: 4px 16px 16px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-2);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
 }
 
 .info__label {
-  margin: 12px 0 4px;
-  font-size: 10.5px;
-  font-weight: 650;
-  letter-spacing: 0.06em;
+  margin: 14px 0 5px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
@@ -1202,21 +2079,95 @@
 
 .info__text {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.55;
   color: var(--text-secondary);
 }
 
 .info__meta {
-  margin: 12px 0 0;
-  font-size: 11px;
+  margin: 14px 0 0;
+  font-size: 12px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .info .quote {
-  background: var(--surface-1);
+  background: var(--surface-raised);
 }
+
+/* The panel is the whole body here, so it drops the inner card treatment. */
+.info--plain {
+  margin: 12px 20px 8px;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.info__text--absent {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* A hint that sits above a field rather than beside a button needs to be a block. */
+.info__hint--block {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.info__focus {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.5;
+}
+
+.info__count {
+  margin: 4px 0 0;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.info__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.info__hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* A description list of the resource's fields, the console's own two-column form. */
+.facts--stacked {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.facts--stacked dt {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  padding-top: 1px;
+}
+
+.facts--stacked dd {
+  margin: 0;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+/* ---- dialog ---- */
 
 .modal {
   position: fixed;
@@ -1225,10 +2176,12 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 40px 24px;
+  padding: 48px 24px;
   overflow-y: auto;
-  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
-  backdrop-filter: blur(3px);
+  /* Material's scrim: a flat black, so the panel's own surface colour is what separates it from
+     the page rather than a blur that shifts with whatever is behind it. Heavy enough that the
+     page reads as pushed back — at 60% a dark page and a dark panel were nearly the same value. */
+  background: rgba(0, 0, 0, 0.75);
 }
 
 @media (max-width: 700px) {
@@ -1239,32 +2192,83 @@
 
 .modal__panel {
   width: min(1100px, 100%);
+  /* The border is the load-bearing part in dark mode: a shadow cast onto an almost-black scrim
+     is invisible, so without it the panel has no edge at all. */
   border: 1px solid var(--border-strong);
   border-radius: 12px;
-  background: var(--surface-1);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  background: var(--surface-raised);
+  box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.4), 0 24px 38px 3px rgba(0, 0, 0, 0.32);
+}
+
+/* The panel is focused when the dialog opens, but it is not itself an interactive thing, so it
+   does not draw the ring that focus normally earns. Everything inside it still does. */
+.modal__panel:focus,
+.modal__panel:focus-visible {
+  outline: none;
 }
 
 .modal__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border);
 }
 
-.modal__question {
+/* The close button stays on the first line of a title that wraps, rather than centring against it. */
+.modal__head .iconbutton {
+  margin: -8px -8px 0 0;
+}
+
+.modal__title {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 12.5px;
+  padding-top: 5px;
+  font-size: 18px;
+  font-weight: 400;
+}
+
+/*
+ * The question, as the expanded chart's title.
+ *
+ * Wraps rather than truncating: a question is the one string in this dialog where the end carries
+ * as much as the start — "…across all meetings" and "…in this meeting" are different questions —
+ * so an ellipsis here removes the part that disambiguates it. Capped at three lines so a pasted
+ * paragraph cannot push the chart itself below the fold.
+ */
+.modal__ask {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal__asklabel {
+  margin: 0 0 3px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text-muted);
 }
 
+.modal__asktext {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
 .modal__body {
-  padding: 6px 4px 14px;
+  padding: 8px 4px 16px;
 }
 
 .modal__body > .card {
@@ -1277,23 +2281,31 @@
 .confirm {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
+/*
+ * The armed pair. Resting state is an outlined pill in the accent colour — the console's tone for
+ * "this is the action on offer" — and arming fills it, so the question is unmistakable. Never
+ * colour alone: the label itself changes to a question when armed.
+ */
 .confirm__act {
-  padding: 5px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-raised);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  border-radius: var(--radius-pill);
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
   white-space: nowrap;
   color: var(--text-secondary);
 }
 
 .confirm__act:hover:not(:disabled):not(.confirm__act--armed) {
-  background: var(--surface-2);
+  background: var(--hover);
   color: var(--text-primary);
 }
 
@@ -1302,35 +2314,26 @@
   cursor: default;
 }
 
-/*
- * The app's own accent, used the way the app already uses it: a wash for the resting state — the
- * same one that marks the selected meeting — with the hairline border and radius every other
- * control here has. Solid fill is kept for hover and for the armed state, so a column of these down
- * the sidebar reads as available actions rather than as a stack of alerts.
- */
 .confirm__act--accent {
-  background: var(--accent-wash);
-  border-color: color-mix(in srgb, var(--accent) 38%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   color: var(--accent);
 }
 
 .confirm__act--accent:hover:not(:disabled):not(.confirm__act--armed) {
-  background: var(--accent);
-  border-color: transparent;
-  color: var(--accent-ink);
+  background: var(--accent-hover);
+  color: var(--accent);
 }
 
 .confirm__act--quiet {
-  font-weight: 550;
+  font-weight: 400;
 }
 
 .confirm__act--danger:hover:not(:disabled):not(.confirm__act--armed) {
   border-color: color-mix(in srgb, var(--critical) 45%, transparent);
+  background: color-mix(in srgb, var(--critical) 8%, transparent);
   color: var(--critical);
 }
 
-/* Armed: filled, so the question is unmistakable — and never colour alone, since the label itself
-   changes to a question. */
 .confirm__act--armed,
 .confirm__act--accent.confirm__act--armed {
   background: var(--accent);
@@ -1346,7 +2349,7 @@
 
 /* An armed button still has to feel pressable, so hover darkens the fill it already has. */
 .confirm__act--armed:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 86%, black);
+  background: color-mix(in srgb, var(--accent) 86%, var(--text-primary));
 }
 
 .confirm__act--danger.confirm__act--armed:hover:not(:disabled) {
@@ -1356,99 +2359,16 @@
 .confirm__cancel {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-raised);
-  font-size: 10px;
-  line-height: 1;
+  border: none;
+  border-radius: 50%;
+  background: none;
   color: var(--text-muted);
 }
 
 .confirm__cancel:hover {
-  background: var(--surface-2);
+  background: var(--hover);
   color: var(--text-primary);
-}
-
-/* ---- meeting info ---- */
-
-.meeting__info {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: none;
-  font-size: 12px;
-  line-height: 1;
-  color: var(--text-muted);
-}
-
-.meeting__info:hover {
-  background: var(--surface-raised);
-  border-color: var(--border);
-  color: var(--text-primary);
-}
-
-.modal__title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 15px;
-  font-weight: 620;
-  letter-spacing: -0.01em;
-}
-
-/* The panel is the whole body here, so it drops the inner card treatment. */
-.info--plain {
-  margin: 10px 14px 6px;
-  border: none;
-  background: none;
-  padding: 0;
-}
-
-.info__text--absent {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.facts {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 6px 14px;
-  margin: 0;
-  font-size: 13px;
-}
-
-.facts dt {
-  color: var(--text-muted);
-  font-size: 11.5px;
-  padding-top: 2px;
-}
-
-.facts dd {
-  margin: 0;
-  color: var(--text-secondary);
-  word-break: break-word;
-}
-
-.info__actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
-}
-
-.info__hint {
-  font-size: 11.5px;
-  color: var(--text-muted);
 }

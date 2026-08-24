@@ -1,38 +1,57 @@
 /*
  * Design tokens, and nothing that isn't one.
  *
- * The chart colours are the validated categorical palette: eight hues in a fixed order
- * whose adjacent pairs clear the colourblind-separation gate in both modes. The order is
- * the safety mechanism, not a preference — reordering it or adding a ninth hue breaks it.
- * Slots are assigned by series index and never cycled.
+ * The values are Google Cloud console's: Material 3 greys, Google Blue for accent and links,
+ * and the console's own convention of a tinted nav selection rather than a border. The names are
+ * unchanged from before on purpose — components address surfaces and text by role, so restyling
+ * the app to a different visual language is a change of values here rather than a change of markup
+ * everywhere.
  *
- * Dark values are declared twice on purpose: the media query follows the OS, the
- * [data-theme] scope follows the in-app toggle, and the toggle has to win both ways.
+ * The chart colours are the validated categorical palette: eight hues in a fixed order whose
+ * adjacent pairs clear the colourblind-separation gate in both modes. The order is the safety
+ * mechanism, not a preference — reordering it or adding a ninth hue breaks it. Slots are assigned
+ * by series index and never cycled. They are deliberately NOT swapped for Google's brand hues:
+ * brand palettes are picked for recognition, not for separation at eight categories.
+ *
+ * Dark values are declared twice on purpose: the media query follows the OS, the [data-theme]
+ * scope follows the in-app toggle, and the toggle has to win both ways.
  */
 
 :root {
   color-scheme: light;
 
-  --surface-1: #fcfcfb;
-  --surface-2: #f9f9f7;
+  /* Surfaces. `1` is a panel, `2` is the page behind it, `raised` is a field or a menu.
+     The console runs panels white on a faintly grey page, which is the inverse of the previous
+     scheme here and the reason cards now read as sitting on top of something. */
+  --surface-1: #ffffff;
+  --surface-2: #f8f9fa;
   --surface-raised: #ffffff;
+  /* The app bar and the rail beneath it: one step further from the page than a panel. */
+  --surface-bar: #ffffff;
+  --surface-sunken: #f1f3f4;
+  /* Hover on anything that isn't a filled control. Alpha, so it composites over any surface. */
+  --hover: rgba(60, 64, 67, 0.08);
+  --pressed: rgba(60, 64, 67, 0.14);
 
-  --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #898781;
+  --text-primary: #1f1f1f;
+  --text-secondary: #444746;
+  --text-muted: #5f6368;
 
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
-  --border-strong: rgba(11, 11, 11, 0.18);
+  --grid: #e8eaed;
+  --axis: #c4c7c5;
+  --border: #dadce0;
+  --border-strong: #bdc1c6;
 
-  --accent: #2a78d6;
+  --accent: #0b57d0;
   --accent-ink: #ffffff;
-  --accent-wash: rgba(42, 120, 214, 0.08);
+  /* The console's nav selection and chip fill — a solid tint, not a translucent wash, because a
+     translucent one shifts hue over the striped backgrounds a dashboard has. */
+  --accent-wash: #d3e3fd;
+  --accent-hover: rgba(11, 87, 208, 0.08);
 
-  --good: #0ca30c;
-  --warning: #fab219;
-  --critical: #d03b3b;
+  --good: #188038;
+  --warning: #e37400;
+  --critical: #d93025;
 
   --series-1: #2a78d6;
   --series-2: #eb6834;
@@ -43,31 +62,48 @@
   --series-7: #4a3aa7;
   --series-8: #e34948;
 
-  --radius: 10px;
-  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 8px 24px rgba(11, 11, 11, 0.04);
-  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Material's radii: 8px on a card, 999px on anything pill-shaped, 4px on a swatch. */
+  --radius: 8px;
+  --radius-pill: 999px;
+  /* Elevation 1 and 2 from Material, which is flatter than a designer's instinct and correct:
+     the console separates regions with hairlines and reserves shadow for things that float. */
+  --shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  --shadow-raised: 0 1px 2px rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+
+  --font: 'Google Sans', 'Google Sans Text', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme='light'])) {
     color-scheme: dark;
 
-    --surface-1: #1a1a19;
-    --surface-2: #0d0d0d;
-    --surface-raised: #232322;
+    --surface-1: #1f1f1f;
+    --surface-2: #131314;
+    --surface-raised: #28292a;
+    --surface-bar: #1f1f1f;
+    --surface-sunken: #131314;
+    --hover: rgba(232, 234, 237, 0.08);
+    --pressed: rgba(232, 234, 237, 0.14);
 
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #898781;
+    --text-primary: #e3e3e3;
+    --text-secondary: #c4c7c5;
+    --text-muted: #9aa0a6;
 
-    --grid: #2c2c2a;
-    --axis: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --border-strong: rgba(255, 255, 255, 0.18);
+    --grid: #2f3033;
+    --axis: #444746;
+    --border: #3c4043;
+    --border-strong: #5f6368;
 
-    --accent: #3987e5;
-    --accent-ink: #0d0d0d;
-    --accent-wash: rgba(57, 135, 229, 0.14);
+    --accent: #a8c7fa;
+    --accent-ink: #062e6f;
+    /* The console's dark nav selection: a deep blue that reads as selected without going bright. */
+    --accent-wash: #004a77;
+    --accent-hover: rgba(168, 199, 250, 0.12);
+
+    --good: #81c995;
+    --warning: #fdd663;
+    --critical: #f28b82;
 
     --series-1: #3987e5;
     --series-2: #d95926;
@@ -78,29 +114,39 @@
     --series-7: #9085e9;
     --series-8: #e66767;
 
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --surface-1: #1a1a19;
-  --surface-2: #0d0d0d;
-  --surface-raised: #232322;
+  --surface-1: #1f1f1f;
+  --surface-2: #131314;
+  --surface-raised: #28292a;
+  --surface-bar: #1f1f1f;
+  --surface-sunken: #131314;
+  --hover: rgba(232, 234, 237, 0.08);
+  --pressed: rgba(232, 234, 237, 0.14);
 
-  --text-primary: #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted: #898781;
+  --text-primary: #e3e3e3;
+  --text-secondary: #c4c7c5;
+  --text-muted: #9aa0a6;
 
-  --grid: #2c2c2a;
-  --axis: #383835;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  --grid: #2f3033;
+  --axis: #444746;
+  --border: #3c4043;
+  --border-strong: #5f6368;
 
-  --accent: #3987e5;
-  --accent-ink: #0d0d0d;
-  --accent-wash: rgba(57, 135, 229, 0.14);
+  --accent: #a8c7fa;
+  --accent-ink: #062e6f;
+  --accent-wash: #004a77;
+  --accent-hover: rgba(168, 199, 250, 0.12);
+
+  --good: #81c995;
+  --warning: #fdd663;
+  --critical: #f28b82;
 
   --series-1: #3987e5;
   --series-2: #d95926;
@@ -111,7 +157,8 @@
   --series-7: #9085e9;
   --series-8: #e66767;
 
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
 }
 
 * {
@@ -127,9 +174,12 @@ body,
 body {
   margin: 0;
   font-family: var(--font);
+  /* 14px is the console's body size, and the reason it fits as much on a row as it does. */
+  font-size: 14px;
   background: var(--surface-2);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button {
@@ -139,9 +189,26 @@ button {
 }
 
 input,
-textarea {
+textarea,
+select {
   font: inherit;
   color: inherit;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Icons sit on the text baseline rather than below it, which is what stops a label from riding
+   high next to its glyph in every icon-and-text control in the app. */
+.icon {
+  display: block;
+  flex: none;
 }
 
 :focus-visible {

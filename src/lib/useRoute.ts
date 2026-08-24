@@ -13,8 +13,22 @@ export type Scope = { kind: 'meeting'; meetingId: string } | { kind: 'global' };
 
 export const GLOBAL_SCOPE: Scope = { kind: 'global' };
 
+/**
+ * A status group, shown as its own listing page.
+ *
+ * Not a `Scope`, deliberately. A scope is something you can ask questions of, and these are not:
+ * `processing` holds meetings with no extracted data yet and `pending` holds ones that have never
+ * run. Folding them into `Scope` would mean every board and ask-box path having to handle a scope
+ * it can never query, which is how a union stops meaning anything.
+ */
+export type Section = 'processed' | 'processing' | 'pending';
+
+const SECTIONS: Section[] = ['processed', 'processing', 'pending'];
+
 export interface Route {
   scope: Scope | null;
+  /** The listing being shown instead of a scope. Never set at the same time as `scope`. */
+  section: Section | null;
   view: View;
 }
 
@@ -52,6 +66,8 @@ export function useRoute(): {
   go: (scope: Scope | null, view?: View) => void;
   /** Replaces it — for a selection the user did not make, which should not become history. */
   replace: (scope: Scope | null, view?: View) => void;
+  /** Pushes a status listing, which replaces whatever scope was showing. */
+  goSection: (section: Section) => void;
 } {
   const [route, setRoute] = useState<Route>(() => parse(window.location.pathname));
 
@@ -64,12 +80,17 @@ export function useRoute(): {
   }, []);
 
   const navigate = useCallback(
-    (mode: 'push' | 'replace', scope: Scope | null, view: View = 'dashboard') => {
-      const path = build(scope, view);
+    (
+      mode: 'push' | 'replace',
+      scope: Scope | null,
+      section: Section | null,
+      view: View = 'dashboard',
+    ) => {
+      const path = build(scope, section, view);
       if (path === window.location.pathname) return;
 
       window.history[mode === 'push' ? 'pushState' : 'replaceState']({}, '', path);
-      setRoute({ scope, view });
+      setRoute({ scope, section, view });
     },
     [],
   );
@@ -77,32 +98,45 @@ export function useRoute(): {
   return {
     route,
     go: useCallback(
-      (scope: Scope | null, view?: View) => navigate('push', scope, view),
+      (scope: Scope | null, view?: View) => navigate('push', scope, null, view),
       [navigate],
     ),
     replace: useCallback(
-      (scope: Scope | null, view?: View) => navigate('replace', scope, view),
+      (scope: Scope | null, view?: View) => navigate('replace', scope, null, view),
+      [navigate],
+    ),
+    goSection: useCallback(
+      (section: Section) => navigate('push', null, section, 'dashboard'),
       [navigate],
     ),
   };
 }
 
-/** `/global[/ask]`, `/m/<id>[/ask]`. Anything else is the root. */
+/** `/global[/ask]`, `/m/<id>[/ask]`, `/s/<section>`. Anything else is the root. */
 function parse(pathname: string): Route {
   const global = /^\/global(?:\/(ask|dashboard))?\/?$/.exec(pathname);
-  if (global) return { scope: GLOBAL_SCOPE, view: asView(global[1]) };
+  if (global) return { scope: GLOBAL_SCOPE, section: null, view: asView(global[1]) };
+
+  const section = /^\/s\/([a-z]+)\/?$/.exec(pathname);
+  // An unknown section name falls through to the root rather than rendering an empty listing for
+  // a group that does not exist.
+  if (section && (SECTIONS as string[]).includes(section[1])) {
+    return { scope: null, section: section[1] as Section, view: 'dashboard' };
+  }
 
   const meeting = /^\/m\/([^/]+)(?:\/(ask|dashboard))?\/?$/.exec(pathname);
-  if (!meeting) return { scope: null, view: 'dashboard' };
+  if (!meeting) return { scope: null, section: null, view: 'dashboard' };
 
   return {
     // Ids are percent-encoded on the way out, so they come back decoded.
     scope: { kind: 'meeting', meetingId: safeDecode(meeting[1]) },
+    section: null,
     view: asView(meeting[2]),
   };
 }
 
-function build(scope: Scope | null, view: View): string {
+function build(scope: Scope | null, section: Section | null, view: View): string {
+  if (section) return `/s/${section}`;
   if (!scope) return '/';
 
   const base = scope.kind === 'global' ? '/global' : `/m/${encodeURIComponent(scope.meetingId)}`;

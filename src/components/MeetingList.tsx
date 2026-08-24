@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon, type IconName } from './Icon';
 import { formatMeetingDate, formatMinutes } from '../lib/format';
 import { isInFlight } from '../lib/useMeetings';
 import type { JobStatus, MeetingCard } from '../types';
@@ -65,7 +66,7 @@ export function MeetingList({
     {
       label: 'Ready to generate',
       items: notStarted,
-      hint: 'Listed by the recording service. Generate builds the analytics before you can query it.',
+      hint: 'Run Generate before these can be queried.',
     },
     { label: 'Needs attention', items: attention },
   ];
@@ -90,7 +91,9 @@ export function MeetingList({
               aria-expanded={isOpen}
               onClick={() => toggle(label)}
             >
-              <span className={`group__chevron${isOpen ? ' group__chevron--open' : ''}`}>›</span>
+              <span className={`group__chevron${isOpen ? ' group__chevron--open' : ''}`}>
+                <Icon name="chevron" size={16} />
+              </span>
               {label}
               <span className="group__count">{items.length}</span>
             </button>
@@ -136,6 +139,15 @@ function MeetingRow({
       {/* Title and action share a row: an action alone on a line reads as unattached to anything,
           and a row that is mostly whitespace makes a list of ten meetings twice as long to scan. */}
       <div className="meeting__top">
+        {/* The status glyph, in front of the title, as the console fronts every row in a resource
+            list. It repeats what the group heading and the pill below already say — deliberately:
+            it is the cue you get without reading, and the words are the cue you get when you do. */}
+        <Icon
+          name={glyph(meeting).icon}
+          size={18}
+          className={`meeting__glyph meeting__glyph--${glyph(meeting).tone}`}
+        />
+
         <button
           type="button"
           className="meeting__pick"
@@ -154,45 +166,16 @@ function MeetingRow({
         {meeting.inCatalog && (
           <button
             type="button"
-            className="meeting__info"
+            className="iconbutton iconbutton--small meeting__more"
             aria-label={`About ${meeting.title}`}
             title="What this meeting was about"
             onClick={() => onInfo(meeting)}
           >
-            ⓘ
+            <Icon name="more" size={18} />
           </button>
         )}
 
-        {meeting.inCatalog && !running && (
-          // Opens the panel rather than starting the run.
-          //
-          // A run now carries tags and a focus instruction, and the row has nowhere to put them.
-          // Starting from here would mean starting untagged and unfocused every time — the
-          // convenient path quietly being the one that loses information. So there is one way in,
-          // and it is the one with the fields on it.
-          <button
-            type="button"
-            className={`button meeting__action ${label === 'Generate' ? 'button--primary' : 'button--ghost'}`}
-            disabled={busy}
-            onClick={(event) => {
-              event.stopPropagation();
-              onInfo(meeting);
-            }}
-          >
-            {busy ? 'Starting…' : label}
-          </button>
-        )}
       </div>
-
-      {meeting.tags.length > 0 && (
-        <div className="meeting__tags">
-          {meeting.tags.map((tag) => (
-            <span className="tag tag--read" key={tag}>
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
 
       {running && (
         <>
@@ -213,17 +196,49 @@ function MeetingRow({
         </>
       )}
 
-      {/* A status pill only where status is news. "Not started" is already said by the group the
-          row is in and by the button offering to start it. */}
-      {!running && meeting.status !== 'NOT_STARTED' && (
+      {/*
+        The row's footer: what state it is in, and the one thing to do about it.
+        A status pill only where status is news — "Not started" is already said by the group the row
+        sits in and by the button offering to start it.
+
+        The action opens the panel rather than starting the run. A run carries tags and a focus
+        instruction, and the row has nowhere to put them; starting from here would mean starting
+        untagged and unfocused every time — the convenient path quietly being the one that loses
+        information. So there is one way in, and it is the one with the fields on it.
+      */}
+      {!running && (meeting.status !== 'NOT_STARTED' || meeting.inCatalog) && (
         <div className="meeting__foot">
-          <StatusPill status={meeting.status} />
+          {meeting.status !== 'NOT_STARTED' && <StatusPill status={meeting.status} />}
+
+          {meeting.inCatalog && meeting.status === 'NOT_STARTED' && (
+            <button
+              type="button"
+              className="meeting__action"
+              disabled={busy}
+              onClick={(event) => {
+                event.stopPropagation();
+                onInfo(meeting);
+              }}
+            >
+              {busy ? 'Starting…' : label}
+            </button>
+          )}
         </div>
       )}
 
       {meeting.error?.message && <div className="meeting__error">{meeting.error.message}</div>}
     </div>
   );
+}
+
+/** Which glyph fronts the row, from the one field that decides it. */
+function glyph(meeting: MeetingCard): { icon: IconName; tone: string } {
+  if (isInFlight(meeting)) return { icon: 'pending', tone: 'warning' };
+  if (meeting.status === 'FAILED') return { icon: 'error', tone: 'critical' };
+  if (meeting.status === 'PARTIAL') return { icon: 'warning', tone: 'warning' };
+  if (meeting.status === 'COMPLETED') return { icon: 'check', tone: 'good' };
+
+  return { icon: 'circle', tone: 'muted' };
 }
 
 /** What pressing the button does, in the user's terms rather than the API's. */

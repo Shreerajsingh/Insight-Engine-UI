@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from './Icon';
 
 /**
  * The question box, and the suggestions under it.
@@ -55,10 +56,11 @@ export function AskBox({
         />
         <button
           type="button"
-          className="button button--primary"
+          className="button button--primary ask__send"
           onClick={submit}
           disabled={busy || question.trim().length < 3}
         >
+          {busy ? <span className="spinner" /> : <Icon name="send" size={18} />}
           {busy ? 'Working…' : 'Ask'}
         </button>
       </div>

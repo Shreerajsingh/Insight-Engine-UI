@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from './Icon';
 
 /**
  * Tags as chips, typed one at a time.
@@ -49,7 +50,7 @@ export function TagInput({
                 disabled={disabled}
                 onClick={() => onChange(tags.filter((other) => other !== tag))}
               >
-                ×
+                <Icon name="close" size={14} />
               </button>
             </span>
           ))}
