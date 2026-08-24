@@ -5,22 +5,8 @@ import { isInFlight } from '../lib/useMeetings';
 import { formatMeetingDate } from '../lib/format';
 import type { MeetingCard } from '../types';
 
-/** How many matches the search offers before it stops listing and says how many it left out. */
 const RESULT_LIMIT = 8;
 
-/**
- * The app bar: what the console puts across the top of every page.
- *
- * Three regions, left to right — the wordmark anchors the left, search takes the middle, and the
- * utilities and the avatar close the right.
- *
- * Search both filters the nav and jumps: typing narrows the panel's list, and the panel that drops
- * under the field lists the same matches so a meeting can be picked without looking away from what
- * you just typed. One filter drives both, so there is never a question of which search you are
- * looking at the results of. Picking a result clears the box, because the search was a way to get
- * somewhere rather than a state worth staying in — and leaving it set would keep the nav filtered
- * down to the one meeting you had just finished finding.
- */
 export function TopBar({
   filter,
   onFilter,
@@ -35,34 +21,26 @@ export function TopBar({
 }: {
   filter: string;
   onFilter: (next: string) => void;
-  /** Every meeting matching the filter, already narrowed by the caller. */
+
   results: MeetingCard[];
   onPick: (meeting: MeetingCard) => void;
-  /** The wordmark's destination — the same place the breadcrumb root goes. */
+
   onHome: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onRefresh: () => void;
   refreshing: boolean;
-  /** The avatar's letter. One glyph, because that is all the console shows either. */
+
   initial: string;
 }) {
   const searchRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-  /**
-   * Whether the results panel is showing.
-   *
-   * Separate from "is there a filter", because the panel has to be dismissible without clearing
-   * what was typed — Escape, or a click elsewhere, should put the panel away and leave the nav
-   * filtered by the term that is still in the box.
-   */
+
   const [open, setOpen] = useState(false);
 
   const shown = results.slice(0, RESULT_LIMIT);
   const showing = open && filter.trim().length > 0;
 
-  // A click outside closes the panel. On `mousedown` rather than `click`, so pressing a result
-  // still lands on the result — a `click` listener here would fire first and unmount it.
   useEffect(() => {
     if (!showing) return;
 
@@ -81,9 +59,6 @@ export function TopBar({
     searchRef.current?.blur();
   };
 
-  // "/" focuses search, which is the console's shortcut and the reason its placeholder says so.
-  // Ignored while the caret is already in a field, or the shortcut would type into the thing the
-  // user is halfway through filling in.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
@@ -104,8 +79,7 @@ export function TopBar({
 
   return (
     <header className="topbar">
-      {/* A button, not a link: it navigates in-app, and an anchor would put a stray hash on the
-          URL that the History-API routing then has to ignore. */}
+
       <button type="button" className="brand" onClick={onHome} title="Meeting Intelligence">
         <Logo size={30} />
         <span className="brand__word">
@@ -133,10 +107,9 @@ export function TopBar({
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={(event) => {
-              // Escape puts the panel away without clearing the term — see `open` above.
+
               if (event.key === 'Escape') setOpen(false);
-              // Enter on a single match goes there, which is what someone who typed an exact id
-              // expects rather than having to reach for the mouse to confirm the only answer.
+
               if (event.key === 'Enter' && shown.length === 1) pick(shown[0]);
             }}
           />
@@ -170,9 +143,7 @@ export function TopBar({
                     aria-selected={false}
                     className="omni__result"
                     key={meeting.meetingId}
-                    // A meeting with no analytics cannot be asked about, so picking it would land
-                    // on a pane with nothing in it. The row still lists — it is how you learn the
-                    // meeting exists — but it says why it is not a destination.
+
                     disabled={!meeting.queryable}
                     onClick={() => pick(meeting)}
                   >
@@ -194,8 +165,6 @@ export function TopBar({
               })
             )}
 
-            {/* Never a silent truncation: a list that stops at eight without saying so reads as
-                "these are all of them". */}
             {results.length > shown.length && (
               <p className="omni__none">
                 {results.length - shown.length} more match — keep typing to narrow it.
@@ -226,7 +195,6 @@ export function TopBar({
           <Icon name={theme === 'dark' ? 'light' : 'dark'} size={20} />
         </button>
 
-
         <span className="avatar" aria-hidden="true">
           {initial}
         </span>
@@ -235,7 +203,6 @@ export function TopBar({
   );
 }
 
-/** Which glyph fronts a result, from the one field that decides it. */
 function glyph(meeting: MeetingCard): { icon: IconName; tone: string } {
   if (isInFlight(meeting)) return { icon: 'pending', tone: 'warning' };
   if (meeting.status === 'FAILED') return { icon: 'error', tone: 'critical' };
@@ -245,13 +212,6 @@ function glyph(meeting: MeetingCard): { icon: IconName; tone: string } {
   return { icon: 'circle', tone: 'muted' };
 }
 
-/**
- * The rail under the bar: where you are, as a path.
- *
- * Every crumb but the last is a link, which is the whole point of the pattern — the console's
- * breadcrumb is how you get back up a level without hunting for a back button. The last one is
- * plain text because it is the page you are on, and a link to here would do nothing.
- */
 export function Breadcrumbs({
   trail,
 }: {
@@ -281,19 +241,6 @@ export function Breadcrumbs({
   );
 }
 
-/**
- * The copy-the-URL action, which the console offers on every detail page.
- *
- * Icon only. As a labelled text button it was the widest thing in the status band and the loudest
- * thing on the page after the headline — disproportionate for a utility nobody reaches for twice in
- * a session, and it dragged the band's right edge around as the label changed width on success.
- * A round icon button costs one glyph, aligns with the health glyph at the other end of the band,
- * and does not resize when it confirms.
- *
- * It confirms in place rather than with a toast: the feedback belongs where the click landed, and a
- * toast for something this small is a notification about nothing. It reverts on its own, because a
- * button stuck showing a tick has stopped saying anything.
- */
 export function CopyUrlButton() {
   const [copied, setCopied] = useState(false);
 
@@ -308,14 +255,13 @@ export function CopyUrlButton() {
     <button
       type="button"
       className={`iconbutton${copied ? ' iconbutton--done' : ''}`}
-      // The label carries the state, so the confirmation is not colour-and-glyph alone.
+
       aria-label={copied ? 'Link copied' : 'Copy link to this page'}
       title={copied ? 'Link copied' : 'Copy link to this page'}
       onClick={() => {
         void navigator.clipboard?.writeText(window.location.href).then(
           () => setCopied(true),
-          // A clipboard write can be refused — an insecure origin, or a denied permission. Saying
-          // nothing would look like the click missed.
+
           () => window.prompt('Copy this link', window.location.href),
         );
       }}

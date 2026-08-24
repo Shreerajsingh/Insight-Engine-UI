@@ -5,23 +5,9 @@ import { formatMeetingDate, formatMinutes } from '../lib/format';
 import type { Section } from '../lib/useRoute';
 import type { MeetingCard } from '../types';
 
-/**
- * A status group as its own page: the console's resource-list view.
- *
- * These three groups exist in the nav already, as folds in a 256px column. That is the right place
- * to pick one meeting out of a few and the wrong place to answer anything about the group — a row
- * there fits a title and a date, so "which of these failed, and why" means opening each one in
- * turn. Given the width of the main pane the same rows carry their error, their progress and their
- * version, and the question is answered by reading down a column.
- *
- * Two of the three have no board and never will: a meeting still processing has no extracted data
- * to chart, and one that has never run has nothing at all. This is the whole of what the app can
- * show about them, which is why they get a page rather than a tab on a board that would be empty.
- */
-
 interface Group {
   label: string;
-  /** What the group is, in one line — the same sentence the nav's hint carries. */
+
   blurb: string;
   icon: IconName;
   tone: 'good' | 'warning' | 'critical' | 'muted';
@@ -49,9 +35,7 @@ export const SECTION_GROUPS: Record<Section, Group> = {
       'Listed by the recording service but not queryable yet. Generate runs the pipeline; a run that failed can be started again.',
     icon: 'circle',
     tone: 'muted',
-    // Everything that is neither queryable nor running: never started, and failed. One page rather
-    // than two because the action is the same on both — run it — and splitting them would put a
-    // one-row table under a heading on most days.
+
     select: (meeting) => !meeting.queryable && !isInFlight(meeting),
   },
 };
@@ -64,7 +48,7 @@ export function SectionPage({
   onInfo,
 }: {
   section: Section;
-  /** Every meeting; the page selects its own. */
+
   meetings: MeetingCard[];
   generating: Set<string>;
   onOpen: (meeting: MeetingCard) => void;
@@ -164,8 +148,7 @@ function Row({
       </td>
 
       <td>
-        {/* The title is the link when there is somewhere to go, and plain text when there is not —
-            rather than a link that lands on an empty board and looks broken. */}
+
         {meeting.queryable ? (
           <button type="button" className="listing__link" onClick={() => onOpen(meeting)}>
             {meeting.title}
@@ -206,7 +189,7 @@ function Row({
             </div>
           </>
         ) : meeting.error?.message ? (
-          // The reason it failed, in full. This is the column the nav could not give it.
+
           <span className="listing__error">{meeting.error.message}</span>
         ) : (
           <span className="listing__when">
@@ -222,8 +205,7 @@ function Row({
       </td>
 
       <td className="listing__actioncol">
-        {/* Opens the panel rather than starting the run: a run carries tags and a focus
-            instruction, and there is one way in — the one with the fields on it. */}
+
         {meeting.inCatalog && !running && (
           <button
             type="button"
@@ -239,14 +221,12 @@ function Row({
   );
 }
 
-/** What pressing the button does, in the user's terms rather than the API's. */
 function action(meeting: MeetingCard): string {
   if (meeting.status === 'NOT_STARTED') return 'Generate';
   if (meeting.status === 'FAILED') return 'Try again';
   return 'Reprocess';
 }
 
-/** The glyph and the word, which always travel together — colour is never the only cue. */
 function healthOf(meeting: MeetingCard): { icon: IconName; tone: string; word: string } {
   if (isInFlight(meeting)) return { icon: 'pending', tone: 'warning', word: 'Processing' };
   if (meeting.status === 'FAILED') return { icon: 'error', tone: 'critical', word: 'Failed' };

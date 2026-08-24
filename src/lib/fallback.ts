@@ -1,17 +1,5 @@
 import type { Cell, Chart, QueryBundle, SeriesSpec } from '../types';
 
-/**
- * The bundle rendered as tables, for when there is no dashboard.
- *
- * `dashboard` is null whenever the charting agent is unconfigured or returned something
- * unusable, and the bundle is still a complete answer — the SQL ran, the rows came back.
- * Showing them as tables is worth far more than an error page, and it is the path that
- * keeps the app usable before the agent's bridge id is set at all.
- *
- * Formats are inferred from column names here, which is exactly what the agent exists to do
- * properly. `*_ms` is a duration and `*_percentage` is a percentage often enough to be worth
- * it, and being wrong costs a badly printed number in a fallback view.
- */
 export function tablesFromBundle(bundle: QueryBundle): Chart[] {
   return bundle.sql
     .filter((result) => result.error === null && result.rowCount > 0)

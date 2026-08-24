@@ -1,29 +1,3 @@
-/*
- * Layout and components, in the Google Cloud console's visual language. Every colour here is a
- * token from theme.css.
- *
- * Four conventions carry most of the resemblance, and they are worth naming because every rule
- * below is an application of one of them:
- *
- *   1. Regions are separated by hairlines, not by shadow. The console is flat — shadow is reserved
- *      for things that genuinely float over the page (a dialog, a menu), and a card that casts one
- *      while sitting still reads as unmoored.
- *   2. Selection is a tint plus a bar, never a border. A row that gains a 1px outline when picked
- *      shifts by a pixel and makes the whole list twitch; a tinted background and a solid bar down
- *      the leading edge change nothing about the row's geometry.
- *   3. Actions are text with a glyph. The console's toolbars are icon-and-label text buttons in the
- *      accent colour, and they only become outlined or filled when the action is the page's point.
- *   4. Density is deliberate. 14px body, 40px rows, 12px labels — it is what lets a nav hold twenty
- *      resources and a header hold four facts without either of them scrolling.
- */
-
-/* ---- shell ---- */
-
-/*
- * Three rows: the bar, the breadcrumb rail, and everything else. Only the third scrolls, which is
- * what keeps the bar and the path to here on screen without either of them being `position: sticky`
- * and fighting the panes underneath for a stacking context.
- */
 .shell {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
@@ -34,8 +8,6 @@
   display: flex;
   min-height: 0;
 }
-
-/* ---- app bar ---- */
 
 .topbar {
   display: flex;
@@ -68,13 +40,12 @@
 .brand__word {
   font-size: 19px;
   font-weight: 500;
-  /* Negative tracking is what separates a wordmark from a sentence at this size. */
+
   letter-spacing: -0.02em;
   line-height: 1;
   white-space: nowrap;
 }
 
-/* The qualifier, lighter and spaced off the product word rather than joined to it. */
 .brand__word2 {
   margin-left: 0.3em;
   font-weight: 400;
@@ -87,14 +58,6 @@
   }
 }
 
-/*
- * Search: the bar's widest element, centred by the flex margins rather than by a fixed width, so it
- * grows into whatever the bar has left.
- *
- * The wrapper is what the results panel is positioned against, and it is also why the panel can be
- * absolute: the bar is a flex row, and a panel participating in that layout would push the
- * utilities off the right edge the moment it opened.
- */
 .omnibox {
   position: relative;
   flex: 1;
@@ -103,8 +66,6 @@
   margin: 0 auto;
 }
 
-/* Sunken rather than outlined at rest — the console's search is a filled field that gains an
-   outline and a shadow when you are actually in it. */
 .omni {
   display: flex;
   align-items: center;
@@ -123,8 +84,6 @@
   box-shadow: var(--shadow);
 }
 
-/* Open, the field and the panel are one surface: the field keeps its rounding at the top and
-   squares off at the bottom so the seam between them reads as a join rather than a gap. */
 .omni--open {
   background: var(--surface-raised);
   border-color: var(--border);
@@ -136,6 +95,8 @@
   color: var(--text-muted);
 }
 
+/* theme.css loads after this file, so its global :focus-visible outline wins on cascade order
+   without the added specificity here. Safe to suppress: .omni:focus-within is the indicator. */
 .omni .omni__input,
 .omni .omni__input:focus,
 .omni .omni__input:focus-visible {
@@ -143,7 +104,7 @@
   min-width: 0;
   border: none;
   background: none;
-  /* Never a ring on the input: `.omni:focus-within` below is this field's focus indicator. */
+
   outline: none;
   box-shadow: none;
   font-size: 14px;
@@ -153,16 +114,10 @@
   color: var(--text-muted);
 }
 
-/* Safari draws its own clear affordance on a search input, which would sit beside ours. */
 .omni__input::-webkit-search-cancel-button {
   appearance: none;
 }
 
-/*
- * The results panel. Floating, so it gets a shadow — the one place in the bar that earns one.
- * Capped in height as well as in count: eight rows is the cap, and the scroll is there for the
- * narrow viewport where eight rows are taller than what is left of the screen.
- */
 .omni__results {
   position: absolute;
   top: 100%;
@@ -195,7 +150,6 @@
   background: var(--hover);
 }
 
-/* Dimmed, not hidden: the row is still how you learn the meeting exists. */
 .omni__result:disabled {
   cursor: default;
   color: var(--text-muted);
@@ -234,7 +188,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Both the no-matches line and the "n more" line: a statement about the list, not a row in it. */
 .omni__none {
   margin: 0;
   padding: 8px 16px;
@@ -268,8 +221,6 @@
   font-weight: 500;
   user-select: none;
 }
-
-/* ---- breadcrumb rail ---- */
 
 .crumbs {
   display: flex;
@@ -319,13 +270,6 @@
   font-weight: 500;
 }
 
-/* ---- left nav ---- */
-
-/*
- * 256px, the console's width, and it collapses by animating to zero rather than by unmounting: the
- * group folds and the scroll position are state someone set, and losing them on every collapse is
- * the thing that makes a hideable panel not worth hiding.
- */
 .nav {
   display: flex;
   flex-direction: column;
@@ -390,10 +334,6 @@
   border-top: 1px solid var(--border);
 }
 
-/*
- * A nav row. Selection is a tint plus a leading bar — see convention 2 at the top of the file.
- * The transparent bar is declared on the resting state so a row does not shift by 3px when picked.
- */
 .navitem {
   display: flex;
   align-items: center;
@@ -447,8 +387,6 @@
   opacity: 0.85;
 }
 
-/* Below the console's own breakpoint the nav floats over the board instead of squeezing it: at
-   this width they cannot both be useful, and the one you came for is the board. */
 @media (max-width: 900px) {
   .nav {
     position: fixed;
@@ -466,10 +404,6 @@
   }
 }
 
-/*
- * The rail. 56px, which is the width a 40px round target needs with the console's 8px gutters —
- * narrow enough that collapsing the panel still buys the board almost all of its 256px back.
- */
 .rail {
   display: flex;
   flex-direction: column;
@@ -501,19 +435,12 @@
   color: var(--text-primary);
 }
 
-/* Selection is a filled circle here rather than the panel's tint-and-bar: there is no room for a
-   leading bar, and a 56px column has nothing else in it for a bar to align against. */
 .railbutton--on,
 .railbutton--on:hover {
   background: var(--accent-wash);
   color: var(--accent);
 }
 
-/*
- * The count, on the icon. A rail has no room for labels, so without this every button is a glyph
- * whose only promise is "a list of something" — and three of the four are routinely empty, which
- * is exactly what you want to know before clicking rather than after.
- */
 .railbutton__count {
   position: absolute;
   top: 0;
@@ -543,21 +470,15 @@
   background: var(--border);
 }
 
-/* Pushes the add action to the foot, matching where the open panel keeps it. */
 .rail__spacer {
   flex: 1;
 }
 
-/* Below the console's breakpoint the panel already floats over the board, so a rail holding 56px
-   open beside it would be taking width from the thing it is meant to be revealing. The bar's
-   hamburger is the way back at this size. */
 @media (max-width: 700px) {
   .rail {
     display: none;
   }
 }
-
-/* ---- nav groups ---- */
 
 .group + .group {
   margin-top: 4px;
@@ -618,10 +539,6 @@
   color: var(--text-muted);
 }
 
-/* ---- meeting rows ---- */
-
-/* Selected the same way the nav item above them is, so "which am I looking at" reads identically
-   whether the answer is one meeting or the whole corpus. */
 .meeting {
   padding: 8px 12px 9px 17px;
   border-left: 3px solid transparent;
@@ -643,7 +560,6 @@
   gap: 10px;
 }
 
-/* The status glyph in front of the title, as the console fronts every row in a resource list. */
 .meeting__glyph {
   margin-top: 2px;
   color: var(--text-muted);
@@ -653,7 +569,6 @@
 .meeting__glyph--warning { color: var(--warning); }
 .meeting__glyph--critical { color: var(--critical); }
 
-/* The picking target: the whole title block, not a link inside it. */
 .meeting__pick {
   display: block;
   flex: 1;
@@ -693,12 +608,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/*
- * The row's overflow control, revealed on hover — the console's `⋮`.
- *
- * Hidden at rest so twenty rows do not carry twenty identical glyphs, but it stays visible while
- * focused, or the only way to reach it with a keyboard would be to tab to something invisible.
- */
 .meeting__more {
   flex: none;
   opacity: 0;
@@ -723,14 +632,6 @@
   margin: 5px 0 0 22px;
 }
 
-/*
- * The row's action: accent text, sized to the line it sits on.
- *
- * Left-aligned in the footer beside the status rather than pushed to the trailing edge. When a row
- * has no status to show — every not-yet-generated one — a right-aligned button is a lone lozenge
- * floating at the far margin, and four of them down the panel read as a column of unrelated
- * controls rather than as one action repeated per row.
- */
 .meeting__action {
   flex: none;
   padding: 2px 8px;
@@ -769,8 +670,6 @@
   color: var(--critical);
 }
 
-/* ---- chips and tags ---- */
-
 .tag {
   display: inline-flex;
   align-items: center;
@@ -785,9 +684,6 @@
   white-space: nowrap;
 }
 
-.tag--read {
-  font-size: 11px;
-}
 
 .tag__x {
   border: 0;
@@ -833,8 +729,6 @@
   margin-top: 12px;
 }
 
-/* An assist chip: outlined, pill, and it fills with the accent tint on hover rather than changing
-   its border, so a row of them does not jump. */
 .chip {
   padding: 6px 14px;
   border: 1px solid var(--border);
@@ -859,14 +753,6 @@
   font-size: 12px;
 }
 
-/* ---- buttons ---- */
-
-/*
- * Three kinds, and the distinction is load-bearing:
- *   `.textbutton` for a toolbar action — accent text, a glyph, no container until hovered;
- *   `.button` for an outlined action — a pill with a hairline;
- *   `.button--primary` for the one filled action a view is about.
- */
 .textbutton {
   display: inline-flex;
   align-items: center;
@@ -892,7 +778,6 @@
   cursor: default;
 }
 
-/* Sized to a table row rather than to a toolbar. */
 .textbutton--compact {
   height: 28px;
   padding: 0 10px;
@@ -943,7 +828,6 @@
   color: var(--text-muted);
 }
 
-/* The quiet variant: a smaller outlined button for a row-level action. */
 .button--ghost {
   height: 30px;
   padding: 0 14px;
@@ -957,8 +841,6 @@
   color: var(--text-primary);
 }
 
-/* An icon-only control. Circular hover target, 40px, which is the console's and also the smallest
-   thing a thumb reliably hits. */
 .iconbutton {
   display: grid;
   place-items: center;
@@ -987,7 +869,6 @@
   cursor: default;
 }
 
-/* Confirmed: the tick takes the success colour, and the label beside it says so too. */
 .iconbutton--done,
 .iconbutton--done:hover {
   color: var(--good);
@@ -998,18 +879,11 @@
   height: 32px;
 }
 
-/* Spun while the fetch it triggered is in flight, so the click has an answer before the data does. */
 .iconbutton--spinning .icon {
   animation: spin 0.8s linear infinite;
 }
 
-/* ---- main pane ---- */
-
-/*
- * No top padding, on purpose. A sticky child's offsets are resolved against the scroll container's
- * PADDING box, so `top: 0` with padding here would park the tab bar that far down and let the board
- * scroll through the gap above it. The space is moved into the first child instead.
- */
+/* No top padding: it would offset every sticky child inside. The first child owns it instead. */
 .main {
   flex: 1;
   min-width: 0;
@@ -1024,9 +898,6 @@
   }
 }
 
-/* ---- status band ---- */
-
-/* One panel, hairline, flat: a region of the page rather than something floating over it. */
 .statusband {
   display: flex;
   align-items: flex-start;
@@ -1083,16 +954,12 @@
   color: var(--text-muted);
 }
 
-/* The copy control sits in a fact's value slot, so it is sized to that line rather than to a
-   toolbar — and pulled left by its own padding so its glyph aligns with the label above it
-   instead of with the edge of its hover circle. */
 .facts__value .iconbutton {
   width: 28px;
   height: 28px;
   margin: -4px 0 -4px -6px;
 }
 
-/* The identifying facts, as stacked label-over-value pairs across the top right. */
 .facts {
   display: flex;
   flex-wrap: wrap;
@@ -1141,22 +1008,14 @@
 
 }
 
-/* The band is the first thing in the pane now that the title row is gone, so it owns the top
-   padding the scroll container gave up — and the gap to whatever follows it, since a listing page
-   has no tab bar between the two to provide one. */
 .statusband {
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
-/* ---- tab bar ---- */
-
-/*
- * Full-bleed across the scroll container by negative margins, then re-applied as padding here:
- * `top: 0` on a sticky child sticks to the container's padding edge, which would leave a strip of
- * scrolling page visible above it. The background is opaque for the same reason — charts passing
- * behind a translucent bar read as a rendering fault.
- */
+/* Full-bleed by negative margins that cancel .main's padding and re-apply it here: a sticky
+   child resolves top:0 against the scroll container's PADDING box, so without this the bar parks
+   below the padding and the board scrolls through the gap above it. Opaque for the same reason. */
 .tabbar {
   position: sticky;
   top: 0;
@@ -1177,7 +1036,7 @@
 .tabs {
   display: flex;
   gap: 4px;
-  /* The bar draws the rule, so the tabs sit flush and their underline lands on it. */
+
   margin-bottom: -1px;
 }
 
@@ -1188,7 +1047,7 @@
   height: 44px;
   padding: 0 16px;
   border: none;
-  /* The indicator is declared transparent at rest so selecting a tab does not move it. */
+
   border-bottom: 3px solid transparent;
   background: none;
   font-size: 14px;
@@ -1224,15 +1083,12 @@
   color: var(--accent);
 }
 
-/* ---- board ---- */
-
 .board {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* A listing page's table sits in its own panel, the way every other block in the pane does. */
 .listing {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -1254,7 +1110,6 @@
   vertical-align: middle;
 }
 
-/* The last row's rule would otherwise draw against the panel's own border. */
 .listing .table tbody tr:last-child td {
   border-bottom: none;
 }
@@ -1281,7 +1136,6 @@
 .listing__glyph--critical { color: var(--critical); }
 .listing__glyph--muted { color: var(--text-muted); }
 
-/* The title, as a link when the meeting has somewhere to go. */
 .listing__link {
   display: block;
   padding: 0;
@@ -1324,8 +1178,6 @@
   color: var(--text-secondary);
 }
 
-/* Wrapped rather than truncated: a stack trace's first line is the useful part, and an ellipsis
-   here would hide the only thing this column exists to show. */
 .listing__error {
   display: block;
   max-width: 46ch;
@@ -1334,12 +1186,9 @@
   color: var(--critical);
 }
 
-/* A listing brings its own panel, so it does not need the board's gap above it. */
 .board--flush {
   gap: 0;
 }
-
-/* ---- ask box ---- */
 
 .ask {
   padding: 16px;
@@ -1380,8 +1229,6 @@
   height: 44px;
 }
 
-/* ---- answer ---- */
-
 .answer {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1403,8 +1250,6 @@
   color: var(--text-muted);
 }
 
-/* The denominator, above the prose: a cross-meeting number is only readable next to how
-   many meetings it is over. */
 .answer__scope {
   margin: 10px 20px 0;
   font-size: 11px;
@@ -1424,11 +1269,6 @@
   padding: 16px 20px 20px;
 }
 
-/*
- * The empty-result state. Sunken rather than bordered like a `.note`: an answer that came back
- * empty is still this card's answer, and boxing it would read as an error interrupting the card
- * rather than as the content of it.
- */
 .answer__empty {
   margin: 8px 20px 0;
   padding: 14px 16px;
@@ -1447,7 +1287,6 @@
   color: var(--text-secondary);
 }
 
-/* The planner's reading of the question, quoted inside the sentence about it. */
 .answer__emptynote em {
   color: var(--text-primary);
   font-style: normal;
@@ -1460,12 +1299,9 @@
   gap: 16px;
 }
 
-/* A table or a wide chart takes the full row rather than being squeezed. */
 .grid > .card--wide {
   grid-column: 1 / -1;
 }
-
-/* ---- chart card ---- */
 
 .card {
   display: flex;
@@ -1510,8 +1346,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- stat tile ---- */
-
 .stat {
   display: flex;
   flex-direction: column;
@@ -1532,8 +1366,6 @@
   font-size: 13px;
   color: var(--text-secondary);
 }
-
-/* ---- table ---- */
 
 .table__scroll {
   overflow-x: auto;
@@ -1577,8 +1409,6 @@
   white-space: nowrap;
 }
 
-/* ---- tooltip ---- */
-
 .tooltip {
   padding: 10px 12px;
   border: 1px solid var(--border);
@@ -1616,8 +1446,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- legend ---- */
-
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -1639,9 +1467,6 @@
   border-radius: 2px;
 }
 
-/* ---- meter, status pill ---- */
-
-/* A meter, not a chart: one ratio against a limit, on the same ramp. */
 .meter {
   height: 4px;
   border-radius: var(--radius-pill);
@@ -1656,7 +1481,6 @@
   transition: width 0.4s ease;
 }
 
-/* Status never rides on colour alone — it always carries its label. */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -1681,8 +1505,6 @@
 .pill--good .pill__dot { background: var(--good); }
 .pill--running .pill__dot { background: var(--warning); }
 .pill--failed .pill__dot { background: var(--critical); }
-
-/* ---- notes, evidence, disclosure ---- */
 
 .notes {
   margin: 16px 0 0;
@@ -1731,7 +1553,6 @@
   cursor: pointer;
 }
 
-/* The console's log panes are monospace on a sunken ground, which is what this is. */
 .sql {
   margin: 10px 0 0;
   padding: 12px 14px;
@@ -1747,8 +1568,6 @@
   word-break: break-word;
 }
 
-/* ---- states ---- */
-
 .note {
   padding: 14px 16px;
   border: 1px solid var(--border);
@@ -1763,7 +1582,6 @@
   border-left: 3px solid var(--critical);
 }
 
-/* Inside the nav, where a bordered box would be a card in a list of rows. */
 .note--flush {
   margin: 4px 16px;
   padding: 8px 0;
@@ -1834,8 +1652,6 @@
   }
 }
 
-/* ---- add meeting ---- */
-
 .add__open {
   width: 100%;
   justify-content: flex-start;
@@ -1873,8 +1689,6 @@
   color: var(--text-secondary);
 }
 
-/* A filled field with an outline, which is Material's text field short of the floating label —
-   and the label here sits above rather than inside, so there is nothing to float. */
 .field__input {
   width: 100%;
   padding: 9px 12px;
@@ -1917,16 +1731,12 @@
   margin: 12px 0;
 }
 
-/* ---- saved dashboard ---- */
-
 .dash {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 16px;
 }
 
-/* One column below tablet width: three-across charts are unreadable on a phone, and a span of
-   4 there would be 100px of plot. */
 @media (max-width: 900px) {
   .dash {
     grid-template-columns: minmax(0, 1fr);
@@ -1946,7 +1756,6 @@
   background: var(--surface-1);
 }
 
-/* Where the dragged card would land. */
 .dash__cell--over {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
@@ -1987,7 +1796,6 @@
   color: var(--text-muted);
 }
 
-/* A segmented button: the console's width picker, one outline around the set. */
 .dash__spans {
   display: flex;
   flex: none;
@@ -2054,8 +1862,6 @@
   color: var(--accent);
 }
 
-/* ---- info panel ---- */
-
 .info {
   margin: 4px 16px 16px;
   padding: 14px 16px;
@@ -2095,7 +1901,6 @@
   background: var(--surface-raised);
 }
 
-/* The panel is the whole body here, so it drops the inner card treatment. */
 .info--plain {
   margin: 12px 20px 8px;
   border: none;
@@ -2108,7 +1913,6 @@
   font-style: italic;
 }
 
-/* A hint that sits above a field rather than beside a button needs to be a block. */
 .info__hint--block {
   display: block;
   margin: 0 0 8px;
@@ -2146,7 +1950,6 @@
   color: var(--text-muted);
 }
 
-/* A description list of the resource's fields, the console's own two-column form. */
 .facts--stacked {
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);
@@ -2167,8 +1970,6 @@
   word-break: break-word;
 }
 
-/* ---- dialog ---- */
-
 .modal {
   position: fixed;
   inset: 0;
@@ -2178,9 +1979,7 @@
   justify-content: center;
   padding: 48px 24px;
   overflow-y: auto;
-  /* Material's scrim: a flat black, so the panel's own surface colour is what separates it from
-     the page rather than a blur that shifts with whatever is behind it. Heavy enough that the
-     page reads as pushed back — at 60% a dark page and a dark panel were nearly the same value. */
+
   background: rgba(0, 0, 0, 0.75);
 }
 
@@ -2190,18 +1989,17 @@
   }
 }
 
+/* The border is load-bearing in dark mode: a shadow cast onto a near-black scrim is invisible,
+   so without it the panel has no edge. */
 .modal__panel {
   width: min(1100px, 100%);
-  /* The border is the load-bearing part in dark mode: a shadow cast onto an almost-black scrim
-     is invisible, so without it the panel has no edge at all. */
+
   border: 1px solid var(--border-strong);
   border-radius: 12px;
   background: var(--surface-raised);
   box-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.4), 0 24px 38px 3px rgba(0, 0, 0, 0.32);
 }
 
-/* The panel is focused when the dialog opens, but it is not itself an interactive thing, so it
-   does not draw the ring that focus normally earns. Everything inside it still does. */
 .modal__panel:focus,
 .modal__panel:focus-visible {
   outline: none;
@@ -2215,7 +2013,6 @@
   border-bottom: 1px solid var(--border);
 }
 
-/* The close button stays on the first line of a title that wraps, rather than centring against it. */
 .modal__head .iconbutton {
   margin: -8px -8px 0 0;
 }
@@ -2231,14 +2028,6 @@
   font-weight: 400;
 }
 
-/*
- * The question, as the expanded chart's title.
- *
- * Wraps rather than truncating: a question is the one string in this dialog where the end carries
- * as much as the start — "…across all meetings" and "…in this meeting" are different questions —
- * so an ellipsis here removes the part that disambiguates it. Capped at three lines so a pasted
- * paragraph cannot push the chart itself below the fold.
- */
 .modal__ask {
   flex: 1;
   min-width: 0;
@@ -2276,19 +2065,12 @@
   background: none;
 }
 
-/* ---- confirm buttons ---- */
-
 .confirm {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-/*
- * The armed pair. Resting state is an outlined pill in the accent colour — the console's tone for
- * "this is the action on offer" — and arming fills it, so the question is unmistakable. Never
- * colour alone: the label itself changes to a question when armed.
- */
 .confirm__act {
   display: inline-flex;
   align-items: center;
@@ -2347,7 +2129,6 @@
   color: #ffffff;
 }
 
-/* An armed button still has to feel pressable, so hover darkens the fill it already has. */
 .confirm__act--armed:hover:not(:disabled) {
   background: color-mix(in srgb, var(--accent) 86%, var(--text-primary));
 }

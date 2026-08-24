@@ -3,20 +3,6 @@ import { Icon } from './Icon';
 import { fetchTranscriptSource, startAnalytics } from '../lib/api';
 import type { StartedJob, TranscriptSource } from '../types';
 
-/**
- * Queue a meeting for processing.
- *
- * The pipeline is started by id, not by upload: the transcript already exists somewhere the
- * worker can read — a fixture directory locally, a signed GCS link in production — so what
- * this form collects is a reference, not a file.
- *
- * It reports `ALREADY_RUNNING` as the distinct outcome it is rather than as success. A repeat
- * request returns the in-flight job instead of starting a second, so someone who typed an id
- * that is already processing needs to be told that, not shown a tick.
- *
- * `reprocess` is the deliberate override: the same meeting again, at the next version. It is a
- * checkbox rather than the default because a full run is a set of AI calls, not a page refresh.
- */
 export function AddMeeting({ onQueued }: { onQueued: () => void }) {
   const [open, setOpen] = useState(false);
   const [meetingId, setMeetingId] = useState('');
@@ -30,8 +16,6 @@ export function AddMeeting({ onQueued }: { onQueued: () => void }) {
   const [result, setResult] = useState<StartedJob | null>(null);
   const [serverSource, setServerSource] = useState<TranscriptSource | null>(null);
 
-  // Asked for when the form opens, because "server default" can itself be gcs — and then the
-  // download URL is required even though the user picked nothing.
   useEffect(() => {
     if (open && !serverSource) void fetchTranscriptSource().then(setServerSource);
   }, [open, serverSource]);
@@ -51,8 +35,7 @@ export function AddMeeting({ onQueued }: { onQueued: () => void }) {
     try {
       const started = await startAnalytics({
         meetingId: meetingId.trim(),
-        // Omitted rather than sent empty: the body is `.strict()`, and an empty string is not
-        // the same request as "use the server's default".
+
         ...(source ? { transcriptSource: source } : {}),
         ...(needsUrl && downloadUrl.trim() ? { downloadUrl: downloadUrl.trim() } : {}),
         ...(tenantId.trim() ? { tenantId: tenantId.trim() } : {}),
@@ -60,7 +43,7 @@ export function AddMeeting({ onQueued }: { onQueued: () => void }) {
       });
 
       setResult(started);
-      // The card appears in "Processing" straight away rather than at the next poll.
+
       onQueued();
 
       if (started.status === 'STARTED') {

@@ -1,18 +1,4 @@
-/**
- * The icon set, inline.
- *
- * Google's console leans on Material Symbols for almost every affordance — the hamburger, the
- * per-row overflow menu, the status glyph in front of a build's name. Reproducing that look means
- * having those glyphs, and there are only about two dozen of them, so they are paths in a map
- * rather than a font dependency: no second request, nothing to 404, and no flash of missing
- * squares before a webfont lands.
- *
- * Every path is drawn on Material's 24x24 grid, so `size` is the only thing a caller sets and the
- * glyphs stay optically consistent at any of them. `currentColor` throughout — an icon beside a
- * label should take the label's colour, including when that label is a disabled control or a
- * selected nav row.
- */
-
+// Material Symbols paths on a 24x24 grid. Keep new glyphs on that grid or sizes stop matching.
 const PATHS = {
   menu: 'M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z',
   search:
@@ -87,8 +73,7 @@ export function Icon({
       height={size}
       viewBox="0 0 24 24"
       fill="currentColor"
-      /* Decorative by definition: every caller either labels the control itself or puts the
-         icon next to text that already says the same thing. */
+
       aria-hidden="true"
       focusable="false"
     >

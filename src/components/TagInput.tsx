@@ -1,17 +1,6 @@
 import { useState } from 'react';
 import { Icon } from './Icon';
 
-/**
- * Tags as chips, typed one at a time.
- *
- * A plain comma-separated text box would be less code and worse: you cannot see what you have
- * committed to, and a stray comma silently makes two tags out of one. Chips make the current set
- * the thing on screen.
- *
- * Normalisation is mirrored from the server (`tagList` in transcript.validation.ts) so the chip
- * shows what will actually be stored. The server is still the authority — this is feedback, not a
- * second implementation of the rule, and if the two ever disagree the stored value wins.
- */
 export function TagInput({
   tags,
   suggestions,
@@ -19,7 +8,7 @@ export function TagInput({
   onChange,
 }: {
   tags: string[];
-  /** Tags already in use elsewhere, offered so the same idea is not spelled two ways. */
+
   suggestions: string[];
   disabled: boolean;
   onChange: (tags: string[]) => void;
@@ -65,18 +54,17 @@ export function TagInput({
         aria-label="Add a tag"
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
-          // Comma and Enter both commit, because both are what people type after a tag.
+
           if (event.key === 'Enter' || event.key === ',') {
             event.preventDefault();
             add(draft);
           }
-          // Backspace on an empty box removes the last chip — the convention for this control.
+
           if (event.key === 'Backspace' && draft === '' && tags.length > 0) {
             onChange(tags.slice(0, -1));
           }
         }}
-        // Committing on blur too: a typed-but-unconfirmed tag that vanishes when you click
-        // Generate is a tag you would swear you added.
+
         onBlur={() => add(draft)}
       />
 
@@ -100,7 +88,6 @@ export function TagInput({
   );
 }
 
-/** The server's rule, mirrored: uppercase, spaces and underscores to hyphens, nothing else. */
 function normalize(value: string): string {
   return value
     .trim()

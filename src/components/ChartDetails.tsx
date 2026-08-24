@@ -3,24 +3,12 @@ import { Modal } from './Modal';
 import { formatMeetingDate } from '../lib/format';
 import type { SavedChart } from '../types';
 
-/**
- * Everything about a saved chart except the chart.
- *
- * A number on a dashboard a week later is only as good as its provenance: the question that
- * produced it, the sentence the agent wrote about it, the quotes behind it, and the caveats saying
- * which result was a sample or which assumption was made. The Ask view shows all of that as an
- * answer; this is the same material attached to the one chart that survived onto the board.
- */
 export function ChartDetails({
   saved,
   showQuestion = true,
 }: {
   saved: SavedChart;
-  /**
-   * False where the surrounding chrome already carries the question — the expanded view puts it in
-   * the dialog's header, and repeating it as the first field below is how the header ends up
-   * looking like a caption for the copy underneath it.
-   */
+
   showQuestion?: boolean;
 }) {
   return (
@@ -70,28 +58,13 @@ export function ChartDetails({
   );
 }
 
-/**
- * One chart at full size, with everything known about it.
- *
- * The grid trades plot size for overview — a card at a third of a row is a thumbnail, and a table
- * inside one is a column of ellipses. This is where a chart is actually read: the same spec, given
- * the whole window, with its details beside it rather than behind a toggle.
- */
 export function ChartExpanded({ saved, onClose }: { saved: SavedChart; onClose: () => void }) {
   return (
     <Modal
       label={saved.chart.title}
       onClose={onClose}
       head={
-        /*
-         * The question is this dialog's title, so it is set like one.
-         *
-         * It was 13px muted on a single truncated line — the quietest text in a view whose entire
-         * subject it is, and long questions lost their ending to an ellipsis exactly where the
-         * qualifier that narrowed them lived. A chart is only readable next to what was asked, so
-         * it takes the heading's size and the primary colour, and it wraps rather than truncating.
-         * The eyebrow above it says which of the dialog's several pieces of prose this one is.
-         */
+
         <div className="modal__ask">
           <p className="modal__asklabel">Question</p>
           <h2 className="modal__asktext">{saved.question}</h2>

@@ -1,19 +1,6 @@
 import { useState } from 'react';
 import { Icon } from './Icon';
 
-/**
- * The question box, and the suggestions under it.
- *
- * Enter asks and shift-enter breaks a line, which is the convention for a box that is
- * mostly one line but occasionally three. The suggestions are there because a blank box
- * that accepts anything is the hardest kind to start with — they are examples of the shape
- * of question this pipeline answers well, not a menu.
- *
- * Takes a placeholder and its own starters rather than a meeting, because the global box
- * needs different examples: the questions worth asking of one call ("who talked more") and
- * of the whole corpus ("which objections keep coming up") barely overlap, and offering the
- * meeting set globally would suggest questions that answer badly across meetings.
- */
 export function AskBox({
   placeholder,
   label,
@@ -82,7 +69,6 @@ export function AskBox({
   );
 }
 
-/** Questions one meeting answers well: what happened in it, and who said what. */
 export const MEETING_STARTERS = [
   'What objections did the customer raise and how serious were they?',
   'Who talked more, the rep or the customer?',
@@ -90,13 +76,6 @@ export const MEETING_STARTERS = [
   'Which questions were left unanswered?',
 ];
 
-/**
- * Questions the corpus answers well, and one meeting cannot.
- *
- * Every one is an aggregate, a ranking or a trend — the shapes the global schema doc steers
- * the interpreter towards. A question about a single phrasing inside one call is a worse fit
- * here, because the columns that hold phrasings are not enumerable corpus-wide.
- */
 export const GLOBAL_STARTERS = [
   'Which objection types come up most often across all meetings?',
   'What questions do customers ask that we most often leave unanswered?',

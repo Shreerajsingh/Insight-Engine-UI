@@ -25,17 +25,8 @@ import type { Answer } from './lib/useAnswers';
 import type { GenerateInput, MeetingCard } from './types';
 import './app.css';
 
-/**
- * A label/value pair in the header's right-hand cluster.
- *
- * The console's detail pages put the facts that identify a resource — its trigger, its source, its
- * commit — up here as small stacked pairs rather than in a table further down, and it works because
- * these are the things you check before reading anything else. `mono` is for an id, where the
- * character shapes matter more than the line looking tidy.
- */
 type Fact = { label: string; value: string; mono?: boolean };
 
-/** How a scope's health reads at a glance: the glyph, its colour, and the word beside the title. */
 type Health = { icon: IconName; tone: 'good' | 'warning' | 'critical' | 'muted'; word: string };
 
 export function App() {
@@ -50,17 +41,13 @@ export function App() {
   const { answers, ask, remove } = useAnswers(board.add);
   const [filter, setFilter] = useState('');
   const [generating, setGenerating] = useState<Set<string>>(new Set());
-  /** The meeting whose description is open, by id — so polling can refresh what it shows. */
+
   const [infoId, setInfoId] = useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [theme, setTheme] = useTheme();
   const [navOpen, setNavOpen] = useNav();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Land on something askable rather than on an empty pane — but only when the URL names nothing.
-  // A URL that names a scope is a decision already made, by a reload or by whoever sent the link,
-  // and overriding it is exactly the behaviour this replaced. `replace`, not `go`: a selection the
-  // user did not make should not be a step the back button returns to.
   useEffect(() => {
     if (scope || section) return;
 
@@ -78,24 +65,18 @@ export function App() {
     : meetings;
 
   const selected = meetings.find((meeting) => meeting.meetingId === selectedId) ?? null;
-  /** The URL names a meeting this list does not hold — a stale link, or a deleted meeting. */
+
   const missing = selectedId !== null && !loading && selected === null;
   const session = answers.filter((answer) => answer.scopeKey === scopeKey(scope));
   const busy = session.some((answer) => answer.state === 'pending');
-  /** Global needs at least one processed meeting to have anything to query. */
+
   const queryable = meetings.filter((meeting) => meeting.queryable);
-  /**
-   * Every tag already in use, offered in the popup.
-   *
-   * Read off the meeting list rather than from an endpoint of its own: the list is already
-   * loaded and already polls, so a separate fetch would be a second source of the same truth.
-   */
+
   const tagSuggestions = [...new Set(meetings.flatMap((meeting) => meeting.tags))].sort();
 
   const onSelect = (meeting: MeetingCard) => go({ kind: 'meeting', meetingId: meeting.meetingId }, view);
   const setView = (next: View) => go(scope, next);
 
-  /** Asking always shows the answer, which lives in the Ask view with its prose and quotes. */
   const onAsk = (question: string) => {
     if (!scope) return;
     if (scope.kind === 'meeting' && !selected) return;
@@ -104,7 +85,6 @@ export function App() {
     void ask(scope, question);
   };
 
-  /** Spun for as long as the fetch takes, so the bar's refresh says something happened. */
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -114,13 +94,6 @@ export function App() {
     }
   };
 
-  /**
-   * Press Generate and the row moves to Processing.
-   *
-   * The pending set is keyed by meeting id rather than being one flag, so generating two meetings
-   * at once marks both buttons instead of the last one pressed. The list is refreshed on the way
-   * out either way — a failure means the state on screen is no longer trustworthy.
-   */
   const onGenerate = async (meeting: MeetingCard, input: GenerateInput) => {
     setGenerating((current) => new Set(current).add(meeting.meetingId));
     setGenerateError(null);
@@ -139,8 +112,6 @@ export function App() {
     }
   };
 
-  // Looked up rather than stored: a generate started from the panel changes the meeting's status,
-  // and the panel should show that rather than the snapshot it opened with.
   const info = meetings.find((meeting) => meeting.meetingId === infoId) ?? null;
 
   const trail: { label: string; onClick?: () => void }[] = [
@@ -157,7 +128,7 @@ export function App() {
       <TopBar
         filter={filter}
         onFilter={setFilter}
-        /* The same narrowed list the nav renders, so the bar and the panel can never disagree. */
+
         results={needle ? matches : []}
         onPick={onSelect}
         onHome={() => go(GLOBAL_SCOPE, view)}
@@ -171,15 +142,7 @@ export function App() {
       <Breadcrumbs trail={trail} />
 
       <div className="shell__body">
-        {/*
-          The console's left nav: a titled panel that collapses out of the way, with the resource
-          list as its rows. Kept in the DOM when closed rather than unmounted, so reopening it does
-          not lose the group folds or the scroll position the user left it at.
-        */}
-        {/* `inert` rather than `aria-hidden`: the panel collapses to zero width but stays in the
-            DOM, so without it every control inside remains tabbable and a keyboard user tabs
-            through a panel that is not on screen. `inert` takes the whole subtree out of the tab
-            order and out of the accessibility tree at once, which is exactly the intent. */}
+
         <aside className={`nav${navOpen ? '' : ' nav--closed'}`} inert={!navOpen}>
           <div className="nav__head">
             <Icon name="history" size={20} className="nav__headicon" />
@@ -196,8 +159,7 @@ export function App() {
           </div>
 
           <div className="nav__scroll">
-            {/* Pinned above the list and outside the search, because it is not a meeting and
-                filtering the meetings should never hide the way back to the global board. */}
+
             <button
               type="button"
               className={`navitem${isGlobal ? ' navitem--on' : ''}`}
@@ -239,8 +201,6 @@ export function App() {
             />
           </div>
 
-          {/* The console pins its one secondary action to the bottom of the nav rather than
-              floating it in the list, and this is that action. */}
           <div className="nav__foot">
             <AddMeeting onQueued={() => void refresh()} />
           </div>
@@ -260,14 +220,6 @@ export function App() {
 
             <span className="rail__rule" />
 
-            {/*
-              One button per destination the nav holds, each going to that destination's listing
-              rather than merely reopening the panel. A rail that only expands the panel is a
-              second hamburger wearing four different glyphs.
-
-              The count rides on the icon, because a rail with no labels has nowhere else to put
-              the one thing that makes these worth clicking — whether there is anything in there.
-            */}
             {RAIL.map((entry) => {
               const on = entry.section ? section === entry.section : isGlobal;
               const count = entry.section
@@ -296,8 +248,6 @@ export function App() {
 
             <span className="rail__spacer" />
 
-            {/* Adding a meeting is a form, and a form needs the panel, so this is the one rail
-                button that legitimately just opens it. */}
             <button
               type="button"
               className="railbutton"
@@ -348,7 +298,7 @@ export function App() {
               starters={GLOBAL_STARTERS}
               askPlaceholder="Ask across every processed meeting…"
               askLabel="Ask a question across all meetings"
-              /* Asking with nothing processed would cost a round trip to be told so. */
+
               blocked={
                 queryable.length === 0 && !loading
                   ? 'No meetings have been processed yet, so there is nothing to ask across. Press Generate on one in the panel.'
@@ -447,12 +397,6 @@ export function App() {
   );
 }
 
-/**
- * The rail, in order.
- *
- * Global first because it is the only one of these that is a place to ask questions rather than a
- * list of meetings; the three status groups follow in the order a meeting moves through them.
- */
 const RAIL: { label: string; icon: IconName; section: Section | null }[] = [
   { label: 'All meetings', icon: 'apps', section: null },
   { label: 'Processed', icon: 'check', section: 'processed' },
@@ -460,7 +404,6 @@ const RAIL: { label: string; icon: IconName; section: Section | null }[] = [
   { label: 'Ready to generate', icon: 'circle', section: 'pending' },
 ];
 
-/** Which glyph and word go in front of a meeting's title, from the one field that decides it. */
 function healthOf(meeting: MeetingCard): Health {
   if (isInFlight(meeting)) return { icon: 'pending', tone: 'warning', word: 'Processing' };
   if (meeting.status === 'FAILED') return { icon: 'error', tone: 'critical', word: 'Failed' };
@@ -470,21 +413,6 @@ function healthOf(meeting: MeetingCard): Health {
   return { icon: 'circle', tone: 'muted', word: 'Not started' };
 }
 
-/**
- * The pane: the console's detail-page header, then the two views under it.
- *
- * Two bands. The status band names the thing with its health glyph in front, its identifying facts
- * off to the right, and the link-copying action after them; the tabs choose what fills the rest.
- *
- * There was a third above these — a title row reading "Meeting details" over a band that already
- * named the meeting, carrying actions that were a second route to the dialog the nav row's ⋮ opens.
- * It cost a band of vertical space on every view to restate what the next band said better.
- *
- * Shared by a meeting's workspace and the global one because they are the same thing over a
- * different scope — the board renders the same charts, the ask view runs the same three steps.
- * Only the copy, the facts and the starters differ, so those are props rather than two
- * near-identical trees that drift apart.
- */
 function Workspace({
   health,
   headline,
@@ -518,15 +446,14 @@ function Workspace({
   starters: string[];
   askPlaceholder: string;
   askLabel: string;
-  /** Why this scope cannot be asked yet, if it cannot. Replaces the ask box. */
+
   blocked: string | null;
   emptyBoard: string;
   emptyAsk: string;
 }) {
   return (
     <>
-      {/* The panel the console puts a resource's summary in: one card, hairline border, no shadow —
-          it is a region of the page rather than something floating over it. */}
+
       <section className="statusband">
         <div className="statusband__ident">
           <Icon
@@ -535,9 +462,7 @@ function Workspace({
             className={`statusband__glyph statusband__glyph--${health.tone}`}
           />
           <div className="statusband__text">
-            {/* The word before the colon is the status, spelled out. Colour is never the only
-                cue for it — a red glyph and a black title says nothing to anyone who cannot
-                separate the two. */}
+
             <h2 className="statusband__headline" title={headline}>
               <span className={`statusband__word statusband__word--${health.tone}`}>
                 {health.word}:
@@ -558,12 +483,6 @@ function Workspace({
             </div>
           ))}
 
-          {/*
-            The copy action, as one more field rather than as a control at the far edge.
-            It is a property of the thing the band describes — the link that points at it — so it
-            reads better labelled and column-aligned with the id and the version than floated off
-            to the right where it belonged to nothing.
-          */}
           <div className="facts__item">
             <dt className="facts__label">Link</dt>
             <dd className="facts__value">
@@ -573,13 +492,6 @@ function Workspace({
         </dl>
       </section>
 
-      {/*
-        Sticky, so the two views stay reachable while a long board scrolls. A sticky child's
-        offsets resolve against the scroll container's PADDING box, so this is full-bleed by
-        negative margins that cancel the container's padding and re-apply it here — otherwise
-        `top: 0` parks the row below the padding and lets the board scroll through the gap above.
-        Opaque for the same reason: charts passing behind a translucent bar read as a fault.
-      */}
       <div className="tabbar">
         <div className="tabs" role="tablist">
           <button
@@ -663,14 +575,6 @@ function Workspace({
 
 type Theme = 'light' | 'dark';
 
-/**
- * The theme toggle, stamped on the root element.
- *
- * Unset means "follow the OS", which is the default and the reason the tokens declare their
- * dark values twice — once under `prefers-color-scheme`, once under `[data-theme]`. The
- * choice is remembered because being thrown back to the OS setting on every reload is the
- * thing that makes a toggle feel broken.
- */
 function useTheme(): [Theme, (next: Theme) => void] {
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem('theme');
@@ -687,13 +591,6 @@ function useTheme(): [Theme, (next: Theme) => void] {
   return [theme, setTheme];
 }
 
-/**
- * Whether the nav is showing, remembered.
- *
- * Same reasoning as the group folds: a panel someone deliberately collapsed to get more width for
- * their charts should still be collapsed after a reload. It starts closed on a narrow viewport,
- * where the nav and the board cannot both fit and showing the nav would hide the answer.
- */
 function useNav(): [boolean, (next: boolean) => void] {
   const [open, setOpen] = useState<boolean>(() => {
     const stored = localStorage.getItem('navOpen');

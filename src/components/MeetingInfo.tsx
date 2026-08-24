@@ -5,18 +5,6 @@ import { TagInput } from './TagInput';
 import { formatMeetingDate, formatMinutes } from '../lib/format';
 import type { GenerateInput, MeetingCard } from '../types';
 
-/**
- * What a meeting is about, before deciding to process it.
- *
- * A run is minutes of pipeline and a set of AI calls, and the sidebar row can only carry a title —
- * which for "Meet-2" says nothing at all. This is where the recording service's description is read,
- * and it holds the Generate button too, so the decision and the action are in the same place rather
- * than the panel being a detour on the way back to the row.
- *
- * A meeting with no description says so. A blank panel would read as a loading state that never
- * finished, and the difference between "nothing was written" and "nothing arrived" matters to
- * whoever has to go and write it.
- */
 export function MeetingInfo({
   meeting,
   busy,
@@ -26,20 +14,15 @@ export function MeetingInfo({
 }: {
   meeting: MeetingCard;
   busy: boolean;
-  /** Tags already used on other meetings, so one idea is not spelled two ways. */
+
   tagSuggestions: string[];
   onGenerate: (meeting: MeetingCard, input: GenerateInput) => void;
   onClose: () => void;
 }) {
   const action = meeting.status === 'NOT_STARTED' ? 'Generate' : 'Reprocess';
 
-  /**
-   * Seeded from the last run, not blank.
-   *
-   * A reprocess with an empty focus box replaces a focused extraction with an unfocused one, and
-   * because only the newest run is queried, that quietly throws the focused data away. Starting
-   * from what the last run used makes keeping it the default and clearing it the deliberate act.
-   */
+  /* Seeded from the last run, not blank: only the newest run is queried, so a reprocess with an
+     empty focus box would silently discard the focused extraction. */
   const [tags, setTags] = useState<string[]>(meeting.tags);
   const [focus, setFocus] = useState(meeting.focus ?? '');
 
@@ -78,7 +61,6 @@ export function MeetingInfo({
             </>
           )}
 
-          {/* Only known once a transcript has been read, so absent before the first run. */}
           {meeting.startedAt && (
             <>
               <dt>Held</dt>
@@ -165,7 +147,6 @@ export function MeetingInfo({
   );
 }
 
-/** Order-insensitive, because the chips are a set and the user did not choose their order. */
 function sameTags(a: string[], b: string[]): boolean {
   return a.length === b.length && [...a].sort().join() === [...b].sort().join();
 }
