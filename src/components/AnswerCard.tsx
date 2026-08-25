@@ -2,6 +2,7 @@ import { ChartCard } from './ChartCard';
 import { DataTable } from './charts/DataTable';
 import { tablesFromBundle } from '../lib/fallback';
 import type { Answer } from '../lib/useAnswers';
+import type { QueryBundle } from '../types';
 
 export function AnswerCard({ answer, onAsk, onRemove }: {
   answer: Answer;
@@ -45,6 +46,14 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
 
   const across = bundle.meetingId === null ? bundle.meetingCount : null;
 
+  /**
+   * The scope and the coverage are different numbers, and only one of them is a claim about the
+   * data. Five meetings searched with rows from one is the ordinary case, and a bare "Across 5
+   * meetings" over one meeting's table reads as a corpus-wide finding.
+   */
+  const from = bundle.meetingsInResults;
+  const partial = across !== null && from !== null && from < across;
+
   const noRows =
     bundle.sql.length > 0 &&
     bundle.sql.every((result) => result.error === null && result.rowCount === 0) &&
@@ -55,10 +64,21 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
       {across !== null && (
         <p className="answer__scope">
           Across {across} {across === 1 ? 'meeting' : 'meetings'}
+          {partial && (
+            <span className="answer__coverage">
+              {' '}· {from === 0 ? 'none of them' : `${from} of them`} returned anything
+            </span>
+          )}
         </p>
       )}
 
-      {noRows ? <NoRows answer={answer} across={across} /> : <p className="answer__text">{prose}</p>}
+      {bundle.failed ? (
+        <Failed bundle={bundle} />
+      ) : noRows ? (
+        <NoRows answer={answer} across={across} />
+      ) : (
+        <p className="answer__text">{prose}</p>
+      )}
 
       <div className="answer__body">
         {charts.length > 0 && (
@@ -129,6 +149,42 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
         <Provenance answer={answer} />
       </div>
     </>
+  );
+}
+
+/**
+ * Every query errored.
+ *
+ * A failed query reports zero rows, so without this branch the fallback prose said "0 rows came
+ * back for this question" — which reads as "the data holds none of what you asked for" when what
+ * actually happened is that nothing was asked of the data at all. The errors were shown, but
+ * under "Worth knowing", below a sentence that had already told the reader the wrong thing.
+ */
+function Failed({ bundle }: { bundle: QueryBundle }) {
+  const errors = [...bundle.sql, ...bundle.semantic]
+    .map((result) => result.error)
+    .filter((error): error is string => error !== null);
+
+  const missingColumn = errors.some((error) => /column .* does not exist/i.test(error));
+
+  return (
+    <div className="answer__empty">
+      <p className="answer__text">
+        This question could not be run — {errors.length === 1 ? 'the query' : 'every query'} in the
+        plan failed.
+      </p>
+      <p className="answer__emptynote">
+        This is not a statement about your meetings: nothing was successfully asked of them.{' '}
+        {missingColumn
+          ? 'The plan referenced a column the database does not have, which usually means a pending migration has not been run.'
+          : 'The errors are listed below and in the plan detail.'}
+      </p>
+      <ul className="notes">
+        {errors.map((error, index) => (
+          <li key={index}>{error}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

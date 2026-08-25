@@ -1259,6 +1259,13 @@
   color: var(--text-muted);
 }
 
+/* The qualifier, not the scope: same line, but it must not read as part of the label. */
+.answer__coverage {
+  color: var(--text-secondary, var(--text-muted));
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
 .answer__text {
   margin: 8px 20px 0;
   font-size: 16px;

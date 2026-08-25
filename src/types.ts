@@ -84,11 +84,17 @@ export interface QueryBundle {
   jobId: string | null;
 
   meetingCount: number;
+
+  /** How many of those meetings actually contributed a row; null when nothing names a meeting. */
+  meetingsInResults: number | null;
   plan: QueryPlan;
   sql: SqlResult[];
   semantic: SemanticResult[];
   warnings: string[];
   empty: boolean;
+
+  /** Every query errored. Distinct from `empty`, which means they ran and matched nothing. */
+  failed: boolean;
 }
 
 export interface QueryResponse {
