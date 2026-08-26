@@ -74,6 +74,8 @@ function AnswerBody({ answer, onAsk }: { answer: Answer; onAsk: (question: strin
 
       {bundle.failed ? (
         <Failed bundle={bundle} />
+      ) : !bundle.plan.answerable && bundle.plan.unanswerableReason ? (
+        <Unanswerable bundle={bundle} />
       ) : noRows ? (
         <NoRows answer={answer} across={across} />
       ) : (
@@ -184,6 +186,25 @@ function Failed({ bundle }: { bundle: QueryBundle }) {
           <li key={index}>{error}</li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * The planner judged the question unanswerable and ran nothing.
+ *
+ * Without this branch the fallback prose said "0 rows came back for this question" — a zero
+ * where the honest answer is "the data does not record this", with the actual reason buried in
+ * the collapsed provenance section. A good refusal is the answer; show it as one.
+ */
+function Unanswerable({ bundle }: { bundle: QueryBundle }) {
+  return (
+    <div className="answer__empty">
+      <p className="answer__text">This cannot be answered from the meeting data.</p>
+      <p className="answer__emptynote">
+        {bundle.plan.unanswerableReason} It was read as <em>{bundle.plan.interpretation}</em> —
+        if that is not what you meant, rephrasing may make it answerable.
+      </p>
     </div>
   );
 }
